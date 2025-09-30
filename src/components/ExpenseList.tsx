@@ -42,6 +42,7 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
       cash: "💵",
       card: "💳",
       bank_transfer: "🏦",
+      pix: "⚡",
       digital_wallet: "📱",
       check: "📝",
       other: "🔧",
