@@ -301,66 +301,6 @@ export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [] }: Ex
             </div>
           )}
 
-          {/* Loan Payment Section (only for expense type) */}
-          {type === "expense" && (
-            <div className="space-y-3 p-4 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-800">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="isLoanPayment"
-                  checked={isLoanPayment}
-                  onCheckedChange={setIsLoanPayment}
-                />
-                <Label htmlFor="isLoanPayment" className="flex items-center gap-2">
-                  <CreditCard className="h-4 w-4" />
-                  Esta é um pagamento de empréstimo
-                </Label>
-              </div>
-              
-              {isLoanPayment && (
-                <div className="space-y-2">
-                  <Label htmlFor="relatedLoanId">Selecionar Empréstimo</Label>
-                  <Select value={relatedLoanId} onValueChange={setRelatedLoanId}>
-                    <SelectTrigger className="transition-all duration-200 focus:scale-[1.02]">
-                      <SelectValue placeholder="Selecione o empréstimo que está sendo pago" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {existingLoans.length > 0 ? (
-                        existingLoans.map((loan) => {
-                          const formatCurrency = (value: number) => {
-                            return new Intl.NumberFormat("pt-BR", {
-                              style: "currency",
-                              currency: "BRL",
-                            }).format(value);
-                          };
-                          
-                          return (
-                            <SelectItem key={loan.id} value={loan.id}>
-                              <span className="flex items-center gap-2">
-                                <span>🏦</span>
-                                <span>{loan.description}</span>
-                                <span className="text-muted-foreground">
-                                  ({formatCurrency(loan.amount)})
-                                </span>
-                              </span>
-                            </SelectItem>
-                          );
-                        })
-                      ) : (
-                        <SelectItem value="placeholder" disabled>
-                          <span className="text-muted-foreground">
-                            Nenhum empréstimo disponível
-                          </span>
-                        </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    Selecione o empréstimo que está sendo pago para rastrear o saldo restante
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Notes */}
           <div className="space-y-2">
@@ -432,6 +372,63 @@ export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [] }: Ex
                     className="transition-all duration-200 focus:scale-[1.02]"
                   />
                 </div>
+              </div>
+            )}
+
+            {/* Loan Payment Option */}
+            <div className="flex items-center space-x-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+              <Checkbox
+                id="isLoanPayment"
+                checked={isLoanPayment}
+                onCheckedChange={setIsLoanPayment}
+              />
+              <Label htmlFor="isLoanPayment" className="flex items-center gap-2">
+                <CreditCard className="h-4 w-4" />
+                Esta é um pagamento de empréstimo
+              </Label>
+            </div>
+            
+            {isLoanPayment && (
+              <div className="space-y-2">
+                <Label htmlFor="relatedLoanId">Selecionar Empréstimo</Label>
+                <Select value={relatedLoanId} onValueChange={setRelatedLoanId}>
+                  <SelectTrigger className="transition-all duration-200 focus:scale-[1.02]">
+                    <SelectValue placeholder="Selecione o empréstimo que está sendo pago" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {existingLoans.length > 0 ? (
+                      existingLoans.map((loan) => {
+                        const formatCurrency = (value: number) => {
+                          return new Intl.NumberFormat("pt-BR", {
+                            style: "currency",
+                            currency: "BRL",
+                          }).format(value);
+                        };
+                        
+                        return (
+                          <SelectItem key={loan.id} value={loan.id}>
+                            <span className="flex items-center gap-2">
+                              <span>🏦</span>
+                              <span>{loan.description}</span>
+                              <span className="text-muted-foreground">
+                                ({formatCurrency(loan.amount)})
+                              </span>
+                            </span>
+                          </SelectItem>
+                        );
+                      })
+                    ) : (
+                      <SelectItem value="placeholder" disabled>
+                        <span className="text-muted-foreground">
+                          Nenhum empréstimo disponível
+                        </span>
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Selecione o empréstimo que está sendo pago para rastrear o saldo restante
+                </p>
               </div>
             )}
           </div>
