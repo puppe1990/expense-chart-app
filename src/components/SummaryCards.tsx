@@ -171,6 +171,25 @@ export const SummaryCards = ({ expenses }: SummaryCardsProps) => {
           </CardContent>
         </Card>
 
+        <Card className="group relative overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 border-0 bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-950/50 dark:to-teal-900/30 hover:scale-105">
+          <div className="absolute inset-0 bg-gradient-to-br from-teal-500/10 to-transparent"></div>
+          <CardContent className="relative pt-4 pb-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-teal-700 dark:text-teal-300 uppercase tracking-wide">Lucros de Investimento</p>
+                <p className="text-lg font-black text-teal-900 dark:text-teal-100">
+                  {formatCurrency(totalInvestmentProfits)}
+                </p>
+                <p className="text-xs text-teal-600 dark:text-teal-400">
+                  {currentAndPastExpenses.filter((e) => e.type === "investment_profit").length} transações
+                </p>
+              </div>
+              <div className="p-3 bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl shadow-md group-hover:scale-110 transition-transform duration-300">
+                <TrendingUp className="h-6 w-6 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <Card className="group relative overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 border-0 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/50 dark:to-orange-900/30 hover:scale-105">
           <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-transparent"></div>
@@ -196,26 +215,6 @@ export const SummaryCards = ({ expenses }: SummaryCardsProps) => {
               </div>
               <div className="p-3 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-md group-hover:scale-110 transition-transform duration-300">
                 <CreditCard className="h-6 w-6 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="group relative overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 border-0 bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-950/50 dark:to-teal-900/30 hover:scale-105">
-          <div className="absolute inset-0 bg-gradient-to-br from-teal-500/10 to-transparent"></div>
-          <CardContent className="relative pt-4 pb-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-xs font-semibold text-teal-700 dark:text-teal-300 uppercase tracking-wide">Lucros de Investimento</p>
-                <p className="text-lg font-black text-teal-900 dark:text-teal-100">
-                  {formatCurrency(totalInvestmentProfits)}
-                </p>
-                <p className="text-xs text-teal-600 dark:text-teal-400">
-                  {currentAndPastExpenses.filter((e) => e.type === "investment_profit").length} transações
-                </p>
-              </div>
-              <div className="p-3 bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl shadow-md group-hover:scale-110 transition-transform duration-300">
-                <TrendingUp className="h-6 w-6 text-white" />
               </div>
             </div>
           </CardContent>
