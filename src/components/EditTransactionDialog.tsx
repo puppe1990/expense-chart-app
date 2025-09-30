@@ -261,10 +261,10 @@ export const EditTransactionDialog = ({
                 <SelectValue placeholder="Selecione o método" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="pix">⚡ PIX</SelectItem>
+                <SelectItem value="bank_transfer">🏦 Transferência Bancária</SelectItem>
                 <SelectItem value="cash">💵 Dinheiro</SelectItem>
                 <SelectItem value="card">💳 Cartão</SelectItem>
-                <SelectItem value="bank_transfer">🏦 Transferência Bancária</SelectItem>
-                <SelectItem value="pix">⚡ PIX</SelectItem>
                 <SelectItem value="digital_wallet">📱 Carteira Digital</SelectItem>
                 <SelectItem value="check">📝 Cheque</SelectItem>
                 <SelectItem value="other">🔧 Outro</SelectItem>
