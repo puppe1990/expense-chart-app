@@ -55,22 +55,22 @@ export const SummaryCards = ({ expenses }: SummaryCardsProps) => {
   const balance = totalIncome + totalInvestmentProfits - totalExpenses;
 
   return (
-    <div className="space-y-8 mb-12">
+    <div className="space-y-6 mb-8">
       {/* Main financial overview */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <Card className="group relative overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 border-0 bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/50 dark:to-emerald-900/30 hover:scale-105">
           <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent"></div>
           <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-400/20 to-transparent rounded-full -translate-y-16 translate-x-16"></div>
-          <CardContent className="relative pt-8 pb-6">
+          <CardContent className="relative pt-6 pb-4">
             <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wide">Total de Entradas</p>
-                <p className="text-4xl font-black text-emerald-900 dark:text-emerald-100">
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wide">Total de Entradas</p>
+                <p className="text-2xl font-black text-emerald-900 dark:text-emerald-100">
                   {formatCurrency(totalIncome)}
                 </p>
                 <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                  <TrendingUp className="h-4 w-4" />
-                  <span className="text-sm font-medium">Crescimento</span>
+                  <TrendingUp className="h-3 w-3" />
+                  <span className="text-xs font-medium">Crescimento</span>
                 </div>
               </div>
               <div className="p-4 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300">
@@ -83,16 +83,16 @@ export const SummaryCards = ({ expenses }: SummaryCardsProps) => {
         <Card className="group relative overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 border-0 bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950/50 dark:to-red-900/30 hover:scale-105">
           <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-transparent"></div>
           <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-red-400/20 to-transparent rounded-full -translate-y-16 translate-x-16"></div>
-          <CardContent className="relative pt-8 pb-6">
+          <CardContent className="relative pt-6 pb-4">
             <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <p className="text-sm font-semibold text-red-700 dark:text-red-300 uppercase tracking-wide">Total de Despesas</p>
-                <p className="text-4xl font-black text-red-900 dark:text-red-100">
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-red-700 dark:text-red-300 uppercase tracking-wide">Total de Despesas</p>
+                <p className="text-2xl font-black text-red-900 dark:text-red-100">
                   {formatCurrency(totalExpenses)}
                 </p>
                 <div className="flex items-center gap-1 text-red-600 dark:text-red-400">
-                  <TrendingDown className="h-4 w-4" />
-                  <span className="text-sm font-medium">Gastos</span>
+                  <TrendingDown className="h-3 w-3" />
+                  <span className="text-xs font-medium">Gastos</span>
                 </div>
               </div>
               <div className="p-4 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300">
@@ -117,15 +117,15 @@ export const SummaryCards = ({ expenses }: SummaryCardsProps) => {
               ? 'bg-gradient-to-br from-blue-400/20 to-transparent' 
               : 'bg-gradient-to-br from-orange-400/20 to-transparent'
           } rounded-full -translate-y-16 translate-x-16`}></div>
-          <CardContent className="relative pt-8 pb-6">
+          <CardContent className="relative pt-6 pb-4">
             <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <p className={`text-sm font-semibold uppercase tracking-wide ${
+              <div className="space-y-1">
+                <p className={`text-xs font-semibold uppercase tracking-wide ${
                   balance >= 0 
                     ? 'text-blue-700 dark:text-blue-300' 
                     : 'text-orange-700 dark:text-orange-300'
                 }`}>Saldo Atual</p>
-                <p className={`text-4xl font-black ${
+                <p className={`text-2xl font-black ${
                   balance >= 0 
                     ? 'text-blue-900 dark:text-blue-100' 
                     : 'text-orange-900 dark:text-orange-100'
@@ -137,8 +137,8 @@ export const SummaryCards = ({ expenses }: SummaryCardsProps) => {
                     ? 'text-blue-600 dark:text-blue-400' 
                     : 'text-orange-600 dark:text-orange-400'
                 }`}>
-                  <Wallet className="h-4 w-4" />
-                  <span className="text-sm font-medium">
+                  <Wallet className="h-3 w-3" />
+                  <span className="text-xs font-medium">
                     {balance >= 0 ? 'Positivo' : 'Negativo'}
                   </span>
                 </div>
@@ -159,11 +159,11 @@ export const SummaryCards = ({ expenses }: SummaryCardsProps) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="group relative overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 border-0 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/50 dark:to-purple-900/30 hover:scale-105">
           <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent"></div>
-          <CardContent className="relative pt-6 pb-6">
+          <CardContent className="relative pt-4 pb-4">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-sm font-semibold text-purple-700 dark:text-purple-300 uppercase tracking-wide">Investimentos</p>
-                <p className="text-2xl font-black text-purple-900 dark:text-purple-100">
+                <p className="text-xs font-semibold text-purple-700 dark:text-purple-300 uppercase tracking-wide">Investimentos</p>
+                <p className="text-lg font-black text-purple-900 dark:text-purple-100">
                   {formatCurrency(totalInvestments)}
                 </p>
               </div>
@@ -176,11 +176,11 @@ export const SummaryCards = ({ expenses }: SummaryCardsProps) => {
 
         <Card className="group relative overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 border-0 bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/50 dark:to-emerald-900/30 hover:scale-105">
           <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent"></div>
-          <CardContent className="relative pt-6 pb-6">
+          <CardContent className="relative pt-4 pb-4">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wide">Poupança</p>
-                <p className="text-2xl font-black text-emerald-900 dark:text-emerald-100">
+                <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wide">Poupança</p>
+                <p className="text-lg font-black text-emerald-900 dark:text-emerald-100">
                   {formatCurrency(totalSavings)}
                 </p>
               </div>
@@ -193,11 +193,11 @@ export const SummaryCards = ({ expenses }: SummaryCardsProps) => {
 
         <Card className="group relative overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 border-0 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/50 dark:to-orange-900/30 hover:scale-105">
           <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-transparent"></div>
-          <CardContent className="relative pt-6 pb-6">
+          <CardContent className="relative pt-4 pb-4">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-sm font-semibold text-orange-700 dark:text-orange-300 uppercase tracking-wide">Empréstimos</p>
-                <p className="text-2xl font-black text-orange-900 dark:text-orange-100">
+                <p className="text-xs font-semibold text-orange-700 dark:text-orange-300 uppercase tracking-wide">Empréstimos</p>
+                <p className="text-lg font-black text-orange-900 dark:text-orange-100">
                   {formatCurrency(totalLoans)}
                 </p>
                 <div className="text-xs space-y-1">
@@ -222,11 +222,11 @@ export const SummaryCards = ({ expenses }: SummaryCardsProps) => {
 
         <Card className="group relative overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 border-0 bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-950/50 dark:to-teal-900/30 hover:scale-105">
           <div className="absolute inset-0 bg-gradient-to-br from-teal-500/10 to-transparent"></div>
-          <CardContent className="relative pt-6 pb-6">
+          <CardContent className="relative pt-4 pb-4">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-sm font-semibold text-teal-700 dark:text-teal-300 uppercase tracking-wide">Lucros de Investimento</p>
-                <p className="text-2xl font-black text-teal-900 dark:text-teal-100">
+                <p className="text-xs font-semibold text-teal-700 dark:text-teal-300 uppercase tracking-wide">Lucros de Investimento</p>
+                <p className="text-lg font-black text-teal-900 dark:text-teal-100">
                   {formatCurrency(totalInvestmentProfits)}
                 </p>
                 <p className="text-xs text-teal-600 dark:text-teal-400">

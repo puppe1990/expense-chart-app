@@ -142,9 +142,9 @@ export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [] }: Ex
       <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-primary/10 to-transparent rounded-full -translate-y-20 translate-x-20"></div>
       
       <CardHeader className="relative">
-        <CardTitle className="flex items-center gap-3 text-2xl font-bold">
+        <CardTitle className="flex items-center gap-3 text-lg font-bold">
           <div className="p-2 bg-gradient-to-br from-primary to-primary/80 rounded-xl shadow-lg">
-            <PlusCircle className="h-6 w-6 text-white" />
+            <PlusCircle className="h-5 w-5 text-white" />
           </div>
           Nova Transação
         </CardTitle>
@@ -152,7 +152,7 @@ export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [] }: Ex
       <CardContent className="relative">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-3">
-            <Label htmlFor="type" className="text-sm font-semibold text-gray-700 dark:text-gray-300">Tipo de Transação</Label>
+            <Label htmlFor="type" className="text-xs font-semibold text-gray-700 dark:text-gray-300">Tipo de Transação</Label>
             <Select value={type} onValueChange={(value: Expense["type"]) => setType(value)}>
               <SelectTrigger className="h-12 rounded-xl border-2 border-gray-200 dark:border-gray-700 focus:border-primary transition-all duration-300 focus:scale-[1.02] shadow-sm hover:shadow-md">
                 <SelectValue placeholder="Selecione o tipo" />
@@ -205,7 +205,7 @@ export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [] }: Ex
           </div>
 
           <div className="space-y-3">
-            <Label htmlFor="description" className="text-sm font-semibold text-gray-700 dark:text-gray-300">Descrição</Label>
+            <Label htmlFor="description" className="text-xs font-semibold text-gray-700 dark:text-gray-300">Descrição</Label>
             <Input
               id="description"
               placeholder="Ex: Supermercado"
@@ -217,7 +217,7 @@ export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [] }: Ex
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-3">
-              <Label htmlFor="amount" className="text-sm font-semibold text-gray-700 dark:text-gray-300">Valor (R$)</Label>
+              <Label htmlFor="amount" className="text-xs font-semibold text-gray-700 dark:text-gray-300">Valor (R$)</Label>
               <Input
                 id="amount"
                 type="number"
@@ -230,7 +230,7 @@ export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [] }: Ex
             </div>
 
             <div className="space-y-3">
-              <Label htmlFor="date" className="text-sm font-semibold text-gray-700 dark:text-gray-300">Data</Label>
+              <Label htmlFor="date" className="text-xs font-semibold text-gray-700 dark:text-gray-300">Data</Label>
               <Input
                 id="date"
                 type="date"
@@ -242,7 +242,7 @@ export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [] }: Ex
           </div>
 
           <div className="space-y-3">
-            <Label htmlFor="category" className="text-sm font-semibold text-gray-700 dark:text-gray-300">Categoria</Label>
+            <Label htmlFor="category" className="text-xs font-semibold text-gray-700 dark:text-gray-300">Categoria</Label>
             <Select value={category} onValueChange={setCategory}>
               <SelectTrigger className="h-12 rounded-xl border-2 border-gray-200 dark:border-gray-700 focus:border-primary transition-all duration-300 focus:scale-[1.02] shadow-sm hover:shadow-md">
                 <SelectValue placeholder="Selecione uma categoria" />
@@ -445,7 +445,7 @@ export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [] }: Ex
 
           <Button
             type="submit"
-            className="w-full h-14 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white font-semibold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] group"
+            className="w-full h-12 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white font-semibold text-base rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] group"
           >
             <PlusCircle className="mr-3 h-5 w-5 group-hover:rotate-90 transition-transform duration-300" />
             {type === "income" ? "Adicionar Entrada" : 

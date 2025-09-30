@@ -68,9 +68,9 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
       <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-primary/10 to-transparent rounded-full -translate-y-20 translate-x-20"></div>
       
       <CardHeader className="relative">
-        <CardTitle className="flex items-center gap-3 text-2xl font-bold">
+        <CardTitle className="flex items-center gap-3 text-lg font-bold">
           <div className="p-2 bg-gradient-to-br from-primary to-primary/80 rounded-xl shadow-lg">
-            <Receipt className="h-6 w-6 text-white" />
+            <Receipt className="h-5 w-5 text-white" />
           </div>
           Transações Recentes
         </CardTitle>
@@ -81,8 +81,8 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
             <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 rounded-full flex items-center justify-center">
               <Receipt className="h-8 w-8 text-gray-400" />
             </div>
-            <p className="text-lg font-medium">Nenhuma transação registrada ainda.</p>
-            <p className="text-sm mt-2 text-gray-500">Adicione sua primeira transação acima!</p>
+            <p className="text-base font-medium">Nenhuma transação registrada ainda.</p>
+            <p className="text-xs mt-2 text-gray-500">Adicione sua primeira transação acima!</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -110,7 +110,7 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-lg truncate text-gray-900 dark:text-gray-100">{expense.description}</p>
+                        <p className="font-semibold text-base truncate text-gray-900 dark:text-gray-100">{expense.description}</p>
                         <div className="flex items-center gap-2 mt-2 flex-wrap">
                           <Badge
                             variant="secondary"
@@ -139,7 +139,7 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className={`text-2xl font-black ${getTransactionTypeColor(expense.type)}`}>
+                      <span className={`text-lg font-black ${getTransactionTypeColor(expense.type)}`}>
                         {isIncome ? "+" : isTransfer ? "" : "-"}{formatCurrency(expense.amount)}
                       </span>
                       <div className="flex items-center gap-2">

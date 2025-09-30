@@ -91,7 +91,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <header className="mb-16 text-center relative">
+        <header className="mb-12 text-center relative">
           {/* Background decoration */}
           <div className="absolute inset-0 -top-8 -left-4 -right-4 h-32 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 rounded-3xl blur-3xl"></div>
           
@@ -105,10 +105,10 @@ const Index = () => {
               </div>
             </div>
             
-            <h1 className="text-5xl md:text-6xl font-black bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent mb-4 tracking-tight">
+            <h1 className="text-3xl md:text-4xl font-black bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent mb-3 tracking-tight">
               Controle Financeiro
             </h1>
-            <p className="text-muted-foreground text-xl mb-8 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-muted-foreground text-base mb-6 max-w-2xl mx-auto leading-relaxed">
               Gerencie suas despesas de forma inteligente e visual com insights poderosos
             </p>
           </div>
@@ -203,7 +203,7 @@ const Index = () => {
 
         <SummaryCards expenses={expenses} />
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-12">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
           <div className="xl:col-span-1">
             <ExpenseForm 
               categories={categories} 

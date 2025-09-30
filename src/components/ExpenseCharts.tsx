@@ -118,15 +118,15 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
         <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/10 to-transparent rounded-full -translate-y-16 translate-x-16"></div>
         
         <CardHeader className="relative">
-          <CardTitle className="flex items-center gap-3 text-xl font-bold">
+          <CardTitle className="flex items-center gap-3 text-lg font-bold">
             <div className="p-2 bg-gradient-to-br from-primary to-primary/80 rounded-xl shadow-lg">
-              <PieChartIcon className="h-5 w-5 text-white" />
+              <PieChartIcon className="h-4 w-4 text-white" />
             </div>
             Despesas por Categoria
           </CardTitle>
         </CardHeader>
         <CardContent className="relative">
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={250}>
             <PieChart>
               <Pie
                 data={categoryData}
@@ -154,15 +154,15 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
         <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-transparent rounded-full -translate-y-16 translate-x-16"></div>
         
         <CardHeader className="relative">
-          <CardTitle className="flex items-center gap-3 text-xl font-bold">
+          <CardTitle className="flex items-center gap-3 text-lg font-bold">
             <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
-              <BarChart3 className="h-5 w-5 text-white" />
+              <BarChart3 className="h-4 w-4 text-white" />
             </div>
             Tendência Mensal
           </CardTitle>
         </CardHeader>
         <CardContent className="relative">
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={250}>
             <BarChart data={monthlyData}>
               <defs>
                 <linearGradient id="primaryGradient" x1="0" y1="0" x2="0" y2="1">
@@ -186,15 +186,15 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
           <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-500/10 to-transparent rounded-full -translate-y-16 translate-x-16"></div>
           
           <CardHeader className="relative">
-            <CardTitle className="flex items-center gap-3 text-xl font-bold">
+            <CardTitle className="flex items-center gap-3 text-lg font-bold">
               <div className="p-2 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg">
-                <BarChart3 className="h-5 w-5 text-white" />
+                <BarChart3 className="h-4 w-4 text-white" />
               </div>
               Lucros de Investimento
             </CardTitle>
           </CardHeader>
           <CardContent className="relative">
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={250}>
               <BarChart data={investmentProfitData}>
                 <defs>
                   <linearGradient id="emeraldGradient" x1="0" y1="0" x2="0" y2="1">
