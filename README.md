@@ -1,6 +1,7 @@
 # 💰 Controle Financeiro - Expense Chart App
 
 Uma aplicação moderna e intuitiva para controle de despesas pessoais, construída com React, TypeScript e componentes UI elegantes.
+<img width="1690" height="932" alt="Screenshot 2025-09-30 at 08 30 26" src="https://github.com/user-attachments/assets/7b621b41-ae79-488a-9dd6-34d868eed920" />
 
 ## ✨ Funcionalidades
 
