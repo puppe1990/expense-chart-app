@@ -90,116 +90,112 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <header className="mb-12 text-center relative">
-          {/* Background decoration */}
-          <div className="absolute inset-0 -top-8 -left-4 -right-4 h-32 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 rounded-3xl blur-3xl"></div>
-          
-          <div className="relative z-10">
-            <div className="flex items-center justify-center gap-4 mb-6">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-primary to-primary/60 rounded-full blur-lg opacity-30"></div>
-                <div className="relative p-4 bg-gradient-to-br from-primary to-primary/80 rounded-full shadow-2xl">
-                  <Wallet className="h-10 w-10 text-white" />
-                </div>
+      {/* Header */}
+      <header className="border-b bg-white/50 backdrop-blur-sm sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-4 max-w-7xl">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary rounded-lg">
+                <Wallet className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">Controle Financeiro</h1>
+                <p className="text-sm text-gray-600">Gerencie suas despesas</p>
               </div>
             </div>
             
-            <h1 className="text-3xl md:text-4xl font-black bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent mb-3 tracking-tight">
-              Controle Financeiro
-            </h1>
-            <p className="text-muted-foreground text-base mb-6 max-w-2xl mx-auto leading-relaxed">
-              Gerencie suas despesas de forma inteligente e visual com insights poderosos
-            </p>
-          </div>
-          
-          {/* Data Management Buttons */}
-          <div className="flex flex-wrap justify-center gap-4 mt-8">
-            <Button
-              onClick={handleExportExpenses}
-              variant="outline"
-              className="flex items-center gap-2 px-6 py-3 rounded-xl border-2 hover:border-primary/50 hover:bg-primary/5 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl"
-            >
-              <Download className="h-4 w-4" />
-              Exportar Dados
-            </Button>
-            
-            <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="flex items-center gap-2 px-6 py-3 rounded-xl border-2 hover:border-primary/50 hover:bg-primary/5 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl">
-                  <Upload className="h-4 w-4" />
-                  Importar Dados
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Importar Dados</DialogTitle>
-                  <DialogDescription>
-                    Selecione um arquivo JSON com seus dados de despesas para importar.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="file" className="text-right">
-                      Arquivo
-                    </Label>
-                    <Input
-                      id="file"
-                      type="file"
-                      accept=".json"
-                      onChange={handleImportExpenses}
-                      ref={setFileInputRef}
-                      className="col-span-3"
-                    />
+            {/* Data Management Buttons */}
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={handleExportExpenses}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Exportar
+              </Button>
+              
+              <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="flex items-center gap-2">
+                    <Upload className="h-4 w-4" />
+                    Importar
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Importar Dados</DialogTitle>
+                    <DialogDescription>
+                      Selecione um arquivo JSON com seus dados de despesas para importar.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="file" className="text-right">
+                        Arquivo
+                      </Label>
+                      <Input
+                        id="file"
+                        type="file"
+                        accept=".json"
+                        onChange={handleImportExpenses}
+                        ref={setFileInputRef}
+                        className="col-span-3"
+                      />
+                    </div>
                   </div>
-                </div>
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsImportDialogOpen(false)}
-                  >
-                    Cancelar
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsImportDialogOpen(false)}
+                    >
+                      Cancelar
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+              
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="destructive" size="sm" className="flex items-center gap-2">
+                    <Trash2 className="h-4 w-4" />
+                    Limpar
                   </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-            
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="destructive" className="flex items-center gap-2 px-6 py-3 rounded-xl border-2 hover:border-destructive/50 hover:bg-destructive/5 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl">
-                  <Trash2 className="h-4 w-4" />
-                  Limpar Dados
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Limpar Todos os Dados</DialogTitle>
-                  <DialogDescription>
-                    Esta ação irá remover permanentemente todos os dados de despesas. 
-                    Esta ação não pode ser desfeita.
-                  </DialogDescription>
-                </DialogHeader>
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {}}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    onClick={handleClearExpenses}
-                  >
-                    Confirmar Limpeza
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Limpar Todos os Dados</DialogTitle>
+                    <DialogDescription>
+                      Esta ação irá remover permanentemente todos os dados de despesas. 
+                      Esta ação não pode ser desfeita.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {}}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      onClick={handleClearExpenses}
+                    >
+                      Confirmar Limpeza
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
-        </header>
+        </div>
+      </header>
+
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
 
         <SummaryCards expenses={expenses} />
 
