@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Trash2, Receipt, CreditCard, FileText, Tag, RotateCcw, ArrowRightLeft, Edit, Search, X } from "lucide-react";
+import { Trash2, Receipt, CreditCard, FileText, Tag, RotateCcw, ArrowRightLeft, Edit, Search, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { Category, Expense } from "./ExpenseForm";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -15,8 +15,11 @@ interface ExpenseListProps {
   onEditExpense: (expense: Expense) => void;
 }
 
+const ITEMS_PER_PAGE = 5;
+
 export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpense }: ExpenseListProps) => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const getCategoryInfo = (categoryId: string) => {
     return categories.find((cat) => cat.id === categoryId);
@@ -87,6 +90,22 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
     });
   }, [expenses, searchQuery, categories]);
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredExpenses.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const paginatedExpenses = filteredExpenses.slice(startIndex, endIndex);
+
+  // Reset to first page when search query changes
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1);
+  };
+
+  const goToPage = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+  };
+
   return (
     <Card className="group relative overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 border-0 bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent"></div>
@@ -111,14 +130,14 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
           <Input
             placeholder="Buscar transações..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             className="pl-10 pr-10 bg-white/50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary/20 focus:border-primary/50"
           />
           {searchQuery && (
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setSearchQuery("")}
+              onClick={() => handleSearchChange("")}
               className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 hover:bg-gray-100 dark:hover:bg-gray-700"
             >
               <X className="h-4 w-4" />
@@ -144,8 +163,9 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
             <p className="text-xs mt-2 text-gray-500">Tente ajustar os termos de busca.</p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {filteredExpenses.map((expense) => {
+          <>
+            <div className="space-y-4">
+              {paginatedExpenses.map((expense) => {
               const category = getCategoryInfo(expense.category);
               const isIncome = expense.type === "income";
               const isTransfer = expense.type === "transfer";
@@ -280,7 +300,63 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
                 </div>
               );
             })}
-          </div>
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="mt-6 flex items-center justify-between">
+                <div className="text-sm text-muted-foreground">
+                  Mostrando {startIndex + 1}-{Math.min(endIndex, filteredExpenses.length)} de {filteredExpenses.length} transações
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => goToPage(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="h-8 w-8 p-0"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  
+                  <div className="flex items-center gap-1">
+                    {(() => {
+                      const maxVisiblePages = 5;
+                      const startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+                      const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+                      const pages = [];
+                      
+                      for (let i = startPage; i <= endPage; i++) {
+                        pages.push(i);
+                      }
+                      
+                      return pages.map((page) => (
+                        <Button
+                          key={page}
+                          variant={currentPage === page ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => goToPage(page)}
+                          className="h-8 w-8 p-0 text-xs"
+                        >
+                          {page}
+                        </Button>
+                      ));
+                    })()}
+                  </div>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => goToPage(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="h-8 w-8 p-0"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </CardContent>
     </Card>
