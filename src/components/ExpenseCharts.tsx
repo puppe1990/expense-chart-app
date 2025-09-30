@@ -34,7 +34,7 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
     const monthlyTotals: { [key: string]: number } = {};
     
     expenses.forEach((expense) => {
-      const date = new Date(expense.date);
+      const date = new Date(expense.date + 'T00:00:00');
       const monthKey = date.toLocaleString("pt-BR", { month: "short", year: "numeric" });
       
       if (monthlyTotals[monthKey]) {

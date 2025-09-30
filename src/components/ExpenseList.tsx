@@ -123,7 +123,7 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
                             </Badge>
                           )}
                           <span className="text-xs text-muted-foreground">
-                            {format(new Date(expense.date), "dd MMM yyyy", { locale: ptBR })}
+                            {format(new Date(expense.date + 'T00:00:00'), "dd MMM yyyy", { locale: ptBR })}
                           </span>
                         </div>
                       </div>
@@ -203,7 +203,7 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
                       </span>
                       {expense.recurringEndDate && (
                         <span className="text-muted-foreground">
-                          até {format(new Date(expense.recurringEndDate), "dd/MM/yyyy", { locale: ptBR })}
+                          até {format(new Date(expense.recurringEndDate + 'T00:00:00'), "dd/MM/yyyy", { locale: ptBR })}
                         </span>
                       )}
                     </div>
