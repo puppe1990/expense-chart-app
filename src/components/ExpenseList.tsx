@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Trash2, Receipt, CreditCard, FileText, Tag, RotateCcw, ArrowRightLeft } from "lucide-react";
+import { Trash2, Receipt, CreditCard, FileText, Tag, RotateCcw, ArrowRightLeft, Edit } from "lucide-react";
 import { Category, Expense } from "./ExpenseForm";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -10,9 +10,10 @@ interface ExpenseListProps {
   expenses: Expense[];
   categories: Category[];
   onDeleteExpense: (id: string) => void;
+  onEditExpense: (expense: Expense) => void;
 }
 
-export const ExpenseList = ({ expenses, categories, onDeleteExpense }: ExpenseListProps) => {
+export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpense }: ExpenseListProps) => {
   const getCategoryInfo = (categoryId: string) => {
     return categories.find((cat) => cat.id === categoryId);
   };
@@ -131,14 +132,26 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense }: ExpenseLi
                       <span className={`font-bold ${getTransactionTypeColor(expense.type)}`}>
                         {isIncome ? "+" : isTransfer ? "" : "-"}{formatCurrency(expense.amount)}
                       </span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => onDeleteExpense(expense.id)}
-                        className="hover:bg-destructive/10 hover:text-destructive transition-colors"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => onEditExpense(expense)}
+                          className="hover:bg-primary/10 hover:text-primary transition-colors"
+                          title="Editar transação"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => onDeleteExpense(expense.id)}
+                          className="hover:bg-destructive/10 hover:text-destructive transition-colors"
+                          title="Excluir transação"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
 

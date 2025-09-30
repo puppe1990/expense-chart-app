@@ -3,6 +3,7 @@ import { ExpenseForm, Category, Expense } from "@/components/ExpenseForm";
 import { ExpenseList } from "@/components/ExpenseList";
 import { SummaryCards } from "@/components/SummaryCards";
 import { ExpenseCharts } from "@/components/ExpenseCharts";
+import { EditTransactionDialog } from "@/components/EditTransactionDialog";
 import { Wallet, Download, Upload, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useExpensesStorage } from "@/hooks/use-local-storage";
@@ -35,13 +36,27 @@ const defaultCategories: Category[] = [
 ];
 
 const Index = () => {
-  const { expenses, addExpense, deleteExpense, clearExpenses, exportExpenses, importExpenses } = useExpensesStorage();
+  const { expenses, addExpense, updateExpense, deleteExpense, clearExpenses, exportExpenses, importExpenses } = useExpensesStorage();
   const [categories] = useState<Category[]>(defaultCategories);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [fileInputRef, setFileInputRef] = useState<HTMLInputElement | null>(null);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const handleAddExpense = (expense: Omit<Expense, "id">) => {
     addExpense(expense);
+  };
+
+  const handleEditExpense = (expense: Expense) => {
+    setEditingExpense(expense);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateExpense = (updatedExpense: Omit<Expense, "id">) => {
+    if (editingExpense) {
+      updateExpense(editingExpense.id, updatedExpense);
+      toast.success("Transação atualizada com sucesso!");
+    }
   };
 
   const handleDeleteExpense = (id: string) => {
@@ -187,12 +202,25 @@ const Index = () => {
               expenses={expenses}
               categories={categories}
               onDeleteExpense={handleDeleteExpense}
+              onEditExpense={handleEditExpense}
             />
           </div>
         </div>
 
         <ExpenseCharts expenses={expenses} categories={categories} />
       </div>
+
+      {/* Edit Transaction Dialog */}
+      <EditTransactionDialog
+        expense={editingExpense}
+        categories={categories}
+        isOpen={isEditDialogOpen}
+        onClose={() => {
+          setIsEditDialogOpen(false);
+          setEditingExpense(null);
+        }}
+        onSave={handleUpdateExpense}
+      />
     </div>
   );
 };

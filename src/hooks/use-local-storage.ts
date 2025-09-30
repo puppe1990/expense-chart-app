@@ -75,6 +75,14 @@ export function useExpensesStorage() {
     setExpenses((prev: any[]) => [newExpense, ...prev]);
   };
 
+  const updateExpense = (id: string, updatedExpense: any) => {
+    setExpenses((prev: any[]) => 
+      prev.map((expense: any) => 
+        expense.id === id ? { ...updatedExpense, id } : expense
+      )
+    );
+  };
+
   const deleteExpense = (id: string) => {
     setExpenses((prev: any[]) => prev.filter((expense: any) => expense.id !== id));
   };
@@ -120,6 +128,7 @@ export function useExpensesStorage() {
   return {
     expenses,
     addExpense,
+    updateExpense,
     deleteExpense,
     clearExpenses,
     exportExpenses,
