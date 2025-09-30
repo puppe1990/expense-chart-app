@@ -64,16 +64,42 @@ const Charts = () => {
 
   const filteredExpenses = getFilteredExpenses();
 
-  const getTotalAmount = () => {
-    return filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0);
-  };
+  const getFinancialSummary = () => {
+    let totalIncome = 0;
+    let totalExpense = 0;
+    let totalInvestment = 0;
+    let totalProfit = 0;
+    
+    filteredExpenses.forEach((expense) => {
+      switch (expense.type) {
+        case "income":
+          totalIncome += expense.amount;
+          break;
+        case "expense":
+          totalExpense += expense.amount;
+          break;
+        case "investment":
+          totalInvestment += expense.amount;
+          break;
+        case "investment_profit":
+          totalProfit += expense.amount;
+          break;
+      }
+    });
 
-  const getTotalTransactions = () => {
-    return filteredExpenses.length;
-  };
+    const netWorth = totalIncome + totalProfit - totalExpense - totalInvestment;
+    const totalTransactions = filteredExpenses.length;
+    const averageTransaction = totalTransactions > 0 ? (totalIncome + totalExpense + totalInvestment + totalProfit) / totalTransactions : 0;
 
-  const getAverageTransaction = () => {
-    return filteredExpenses.length > 0 ? getTotalAmount() / filteredExpenses.length : 0;
+    return {
+      totalIncome,
+      totalExpense,
+      totalInvestment,
+      totalProfit,
+      netWorth,
+      totalTransactions,
+      averageTransaction
+    };
   };
 
   const getTopCategory = () => {
@@ -109,6 +135,7 @@ const Charts = () => {
     }).format(value);
   };
 
+  const financialSummary = getFinancialSummary();
   const topCategory = getTopCategory();
 
   return (
@@ -193,26 +220,52 @@ const Charts = () => {
 
         {/* Summary Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-blue-100 text-sm font-medium">Total Geral</p>
-                  <p className="text-2xl font-bold">{formatCurrency(getTotalAmount())}</p>
-                </div>
-                <DollarSign className="h-8 w-8 text-blue-200" />
-              </div>
-            </CardContent>
-          </Card>
-
           <Card className="border-0 shadow-lg bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-emerald-100 text-sm font-medium">Transações</p>
-                  <p className="text-2xl font-bold">{getTotalTransactions()}</p>
+                  <p className="text-emerald-100 text-sm font-medium">Receitas Totais</p>
+                  <p className="text-2xl font-bold">{formatCurrency(financialSummary.totalIncome + financialSummary.totalProfit)}</p>
+                  <p className="text-xs text-emerald-200 mt-1">
+                    {formatCurrency(financialSummary.totalIncome)} + {formatCurrency(financialSummary.totalProfit)} lucros
+                  </p>
                 </div>
                 <TrendingUp className="h-8 w-8 text-emerald-200" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-red-500 to-red-600 text-white">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-red-100 text-sm font-medium">Despesas Totais</p>
+                  <p className="text-2xl font-bold">{formatCurrency(financialSummary.totalExpense + financialSummary.totalInvestment)}</p>
+                  <p className="text-xs text-red-200 mt-1">
+                    {formatCurrency(financialSummary.totalExpense)} + {formatCurrency(financialSummary.totalInvestment)} investimentos
+                  </p>
+                </div>
+                <DollarSign className="h-8 w-8 text-red-200" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className={`border-0 shadow-lg text-white ${financialSummary.netWorth >= 0 
+            ? 'bg-gradient-to-br from-blue-500 to-blue-600' 
+            : 'bg-gradient-to-br from-orange-500 to-orange-600'
+          }`}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className={`text-sm font-medium ${financialSummary.netWorth >= 0 ? 'text-blue-100' : 'text-orange-100'}`}>
+                    Saldo Líquido
+                  </p>
+                  <p className="text-2xl font-bold">{formatCurrency(financialSummary.netWorth)}</p>
+                  <p className={`text-xs mt-1 ${financialSummary.netWorth >= 0 ? 'text-blue-200' : 'text-orange-200'}`}>
+                    {financialSummary.netWorth >= 0 ? '💰 Positivo' : '⚠️ Negativo'}
+                  </p>
+                </div>
+                <BarChart3 className={`h-8 w-8 ${financialSummary.netWorth >= 0 ? 'text-blue-200' : 'text-orange-200'}`} />
               </div>
             </CardContent>
           </Card>
@@ -221,21 +274,11 @@ const Charts = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-purple-100 text-sm font-medium">Média por Transação</p>
-                  <p className="text-2xl font-bold">{formatCurrency(getAverageTransaction())}</p>
-                </div>
-                <BarChart3 className="h-8 w-8 text-purple-200" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 shadow-lg bg-gradient-to-br from-orange-500 to-orange-600 text-white">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-orange-100 text-sm font-medium">Categoria Top</p>
-                  <p className="text-lg font-bold">{topCategory?.name || "N/A"}</p>
-                  <p className="text-sm text-orange-200">{topCategory?.icon} {formatCurrency(topCategory?.amount || 0)}</p>
+                  <p className="text-purple-100 text-sm font-medium">Transações</p>
+                  <p className="text-2xl font-bold">{financialSummary.totalTransactions}</p>
+                  <p className="text-xs text-purple-200 mt-1">
+                    Média: {formatCurrency(financialSummary.averageTransaction)}
+                  </p>
                 </div>
                 <div className="text-2xl">{topCategory?.icon || "📊"}</div>
               </div>
