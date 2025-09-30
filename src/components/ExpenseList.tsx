@@ -32,7 +32,6 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
       transfer: "🔄",
       investment: "📈",
       loan: "🏦",
-      savings: "💎",
     };
     return icons[type] || "📝";
   };
@@ -57,7 +56,6 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
       transfer: "text-blue-600 dark:text-blue-400",
       investment: "text-purple-600 dark:text-purple-400",
       loan: "text-orange-600 dark:text-orange-400",
-      savings: "text-emerald-600 dark:text-emerald-400",
     };
     return colors[type] || "text-gray-600 dark:text-gray-400";
   };

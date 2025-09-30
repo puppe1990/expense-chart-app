@@ -28,7 +28,7 @@ export interface Expense {
   amount: number;
   category: string;
   date: string;
-  type: "income" | "expense" | "transfer" | "investment" | "investment_profit" | "loan" | "savings";
+  type: "income" | "expense" | "transfer" | "investment" | "investment_profit" | "loan";
   paymentMethod?: "cash" | "card" | "bank_transfer" | "digital_wallet" | "check" | "pix" | "other";
   notes?: string;
   tags?: string[];
@@ -130,7 +130,6 @@ export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [] }: Ex
       investment: "Investimento adicionado com sucesso!",
       investment_profit: "Lucro de investimento adicionado com sucesso!",
       loan: "Empréstimo adicionado com sucesso!",
-      savings: "Poupança adicionada com sucesso!",
     };
     
     toast.success(typeMessages[type]);
@@ -192,12 +191,6 @@ export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [] }: Ex
                   <span className="flex items-center gap-2">
                     <span>🏦</span>
                     <span>Empréstimo</span>
-                  </span>
-                </SelectItem>
-                <SelectItem value="savings">
-                  <span className="flex items-center gap-2">
-                    <span>💎</span>
-                    <span>Poupança</span>
                   </span>
                 </SelectItem>
               </SelectContent>

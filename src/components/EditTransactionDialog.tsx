@@ -128,7 +128,6 @@ export const EditTransactionDialog = ({
       transfer: "Transferência atualizada com sucesso!",
       investment: "Investimento atualizado com sucesso!",
       loan: "Empréstimo atualizado com sucesso!",
-      savings: "Poupança atualizada com sucesso!",
     };
     
     toast.success(typeMessages[formData.type]);
@@ -189,12 +188,6 @@ export const EditTransactionDialog = ({
                   <span className="flex items-center gap-2">
                     <span>🏦</span>
                     <span>Empréstimo</span>
-                  </span>
-                </SelectItem>
-                <SelectItem value="savings">
-                  <span className="flex items-center gap-2">
-                    <span>💎</span>
-                    <span>Poupança</span>
                   </span>
                 </SelectItem>
               </SelectContent>

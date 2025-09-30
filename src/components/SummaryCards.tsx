@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { TrendingDown, TrendingUp, Wallet, TrendingUp as InvestmentIcon, PiggyBank, CreditCard } from "lucide-react";
+import { TrendingDown, TrendingUp, Wallet, TrendingUp as InvestmentIcon, CreditCard } from "lucide-react";
 import { Expense } from "./ExpenseForm";
 import { filterNonFutureExpenses } from "@/lib/utils";
 
@@ -34,9 +34,6 @@ export const SummaryCards = ({ expenses }: SummaryCardsProps) => {
     .filter((e) => e.type === "investment_profit")
     .reduce((sum, expense) => sum + expense.amount, 0);
 
-  const totalSavings = currentAndPastExpenses
-    .filter((e) => e.type === "savings")
-    .reduce((sum, expense) => sum + expense.amount, 0);
 
   const totalLoans = currentAndPastExpenses
     .filter((e) => e.type === "loan")
@@ -174,22 +171,6 @@ export const SummaryCards = ({ expenses }: SummaryCardsProps) => {
           </CardContent>
         </Card>
 
-        <Card className="group relative overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 border-0 bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/50 dark:to-emerald-900/30 hover:scale-105">
-          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent"></div>
-          <CardContent className="relative pt-4 pb-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wide">Poupança</p>
-                <p className="text-lg font-black text-emerald-900 dark:text-emerald-100">
-                  {formatCurrency(totalSavings)}
-                </p>
-              </div>
-              <div className="p-3 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-md group-hover:scale-110 transition-transform duration-300">
-                <PiggyBank className="h-6 w-6 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         <Card className="group relative overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 border-0 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/50 dark:to-orange-900/30 hover:scale-105">
           <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-transparent"></div>
