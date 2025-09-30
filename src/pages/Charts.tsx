@@ -1,9 +1,14 @@
+import { useState } from "react";
 import { ExpenseCharts } from "@/components/ExpenseCharts";
 import { Category, Expense } from "@/components/ExpenseForm";
 import { useExpensesStorage } from "@/hooks/use-local-storage";
-import { ArrowLeft, BarChart3 } from "lucide-react";
+import { ArrowLeft, BarChart3, TrendingUp, DollarSign, Calendar, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
+import { filterNonFutureExpenses } from "@/lib/utils";
 
 const defaultCategories: Category[] = [
   { id: "salary", name: "Salário", icon: "💰", color: "#10b981" },
@@ -23,27 +28,113 @@ const defaultCategories: Category[] = [
 
 const Charts = () => {
   const { expenses } = useExpensesStorage();
+  const [timeFilter, setTimeFilter] = useState("all");
+  const [chartType, setChartType] = useState("all");
+
+  const currentAndPastExpenses = filterNonFutureExpenses(expenses);
+
+  const getFilteredExpenses = () => {
+    let filtered = currentAndPastExpenses;
+    
+    if (timeFilter !== "all") {
+      const now = new Date();
+      const filterDate = new Date();
+      
+      switch (timeFilter) {
+        case "30days":
+          filterDate.setDate(now.getDate() - 30);
+          break;
+        case "90days":
+          filterDate.setDate(now.getDate() - 90);
+          break;
+        case "1year":
+          filterDate.setFullYear(now.getFullYear() - 1);
+          break;
+      }
+      
+      filtered = filtered.filter(expense => new Date(expense.date) >= filterDate);
+    }
+    
+    if (chartType !== "all") {
+      filtered = filtered.filter(expense => expense.type === chartType);
+    }
+    
+    return filtered;
+  };
+
+  const filteredExpenses = getFilteredExpenses();
+
+  const getTotalAmount = () => {
+    return filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+  };
+
+  const getTotalTransactions = () => {
+    return filteredExpenses.length;
+  };
+
+  const getAverageTransaction = () => {
+    return filteredExpenses.length > 0 ? getTotalAmount() / filteredExpenses.length : 0;
+  };
+
+  const getTopCategory = () => {
+    const categoryTotals: { [key: string]: number } = {};
+    
+    filteredExpenses.forEach((expense) => {
+      if (categoryTotals[expense.category]) {
+        categoryTotals[expense.category] += expense.amount;
+      } else {
+        categoryTotals[expense.category] = expense.amount;
+      }
+    });
+
+    const topCategory = Object.entries(categoryTotals)
+      .sort(([,a], [,b]) => b - a)[0];
+    
+    if (topCategory) {
+      const category = defaultCategories.find(cat => cat.id === topCategory[0]);
+      return {
+        name: category?.name || "Outros",
+        amount: topCategory[1],
+        icon: category?.icon || "📌"
+      };
+    }
+    
+    return null;
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(value);
+  };
+
+  const topCategory = getTopCategory();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
       {/* Header */}
-      <header className="border-b bg-white/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 max-w-7xl">
+      <header className="border-b bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
+        <div className="container mx-auto px-4 py-6 max-w-7xl">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary rounded-lg">
-                <BarChart3 className="h-6 w-6 text-white" />
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl shadow-lg">
+                <BarChart3 className="h-7 w-7 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Gráficos e Análises</h1>
-                <p className="text-sm text-gray-600">Visualize seus dados financeiros</p>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                  Dashboard Financeiro
+                </h1>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Análises detalhadas e insights dos seus dados
+                </p>
               </div>
             </div>
             
             {/* Navigation Button */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <Link to="/">
-                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                <Button variant="outline" size="sm" className="flex items-center gap-2 hover:bg-gray-50">
                   <ArrowLeft className="h-4 w-4" />
                   Voltar ao Início
                 </Button>
@@ -54,7 +145,106 @@ const Charts = () => {
       </header>
 
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <ExpenseCharts expenses={expenses} categories={defaultCategories} />
+        {/* Filters */}
+        <div className="mb-8">
+          <Card className="border-0 shadow-lg bg-white/70 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Filter className="h-5 w-5" />
+                Filtros e Período
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-4">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-gray-500" />
+                  <Select value={timeFilter} onValueChange={setTimeFilter}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Período" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os períodos</SelectItem>
+                      <SelectItem value="30days">Últimos 30 dias</SelectItem>
+                      <SelectItem value="90days">Últimos 90 dias</SelectItem>
+                      <SelectItem value="1year">Último ano</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-gray-500" />
+                  <Select value={chartType} onValueChange={setChartType}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Tipo de dados" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os tipos</SelectItem>
+                      <SelectItem value="expense">Apenas despesas</SelectItem>
+                      <SelectItem value="income">Apenas receitas</SelectItem>
+                      <SelectItem value="investment">Investimentos</SelectItem>
+                      <SelectItem value="investment_profit">Lucros</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Summary Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-blue-100 text-sm font-medium">Total Geral</p>
+                  <p className="text-2xl font-bold">{formatCurrency(getTotalAmount())}</p>
+                </div>
+                <DollarSign className="h-8 w-8 text-blue-200" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-emerald-100 text-sm font-medium">Transações</p>
+                  <p className="text-2xl font-bold">{getTotalTransactions()}</p>
+                </div>
+                <TrendingUp className="h-8 w-8 text-emerald-200" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-purple-100 text-sm font-medium">Média por Transação</p>
+                  <p className="text-2xl font-bold">{formatCurrency(getAverageTransaction())}</p>
+                </div>
+                <BarChart3 className="h-8 w-8 text-purple-200" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-orange-500 to-orange-600 text-white">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-orange-100 text-sm font-medium">Categoria Top</p>
+                  <p className="text-lg font-bold">{topCategory?.name || "N/A"}</p>
+                  <p className="text-sm text-orange-200">{topCategory?.icon} {formatCurrency(topCategory?.amount || 0)}</p>
+                </div>
+                <div className="text-2xl">{topCategory?.icon || "📊"}</div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Charts */}
+        <ExpenseCharts expenses={filteredExpenses} categories={defaultCategories} />
       </div>
     </div>
   );
