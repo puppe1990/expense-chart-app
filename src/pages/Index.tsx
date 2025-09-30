@@ -3,8 +3,21 @@ import { ExpenseForm, Category, Expense } from "@/components/ExpenseForm";
 import { ExpenseList } from "@/components/ExpenseList";
 import { SummaryCards } from "@/components/SummaryCards";
 import { ExpenseCharts } from "@/components/ExpenseCharts";
-import { Wallet } from "lucide-react";
+import { Wallet, Download, Upload, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useExpensesStorage } from "@/hooks/use-local-storage";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const defaultCategories: Category[] = [
   { id: "salary", name: "Salário", icon: "💰", color: "#10b981" },
@@ -22,20 +35,41 @@ const defaultCategories: Category[] = [
 ];
 
 const Index = () => {
-  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const { expenses, addExpense, deleteExpense, clearExpenses, exportExpenses, importExpenses } = useExpensesStorage();
   const [categories] = useState<Category[]>(defaultCategories);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [fileInputRef, setFileInputRef] = useState<HTMLInputElement | null>(null);
 
   const handleAddExpense = (expense: Omit<Expense, "id">) => {
-    const newExpense: Expense = {
-      ...expense,
-      id: Date.now().toString(),
-    };
-    setExpenses([newExpense, ...expenses]);
+    addExpense(expense);
   };
 
   const handleDeleteExpense = (id: string) => {
-    setExpenses(expenses.filter((expense) => expense.id !== id));
+    deleteExpense(id);
     toast.success("Despesa removida com sucesso!");
+  };
+
+  const handleClearExpenses = () => {
+    clearExpenses();
+    toast.success("Todos os dados foram removidos!");
+  };
+
+  const handleExportExpenses = () => {
+    exportExpenses();
+    toast.success("Dados exportados com sucesso!");
+  };
+
+  const handleImportExpenses = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      await importExpenses(file);
+      toast.success("Dados importados com sucesso!");
+      setIsImportDialogOpen(false);
+    } catch (error) {
+      toast.error("Erro ao importar dados. Verifique o formato do arquivo.");
+    }
   };
 
   return (
@@ -50,9 +84,96 @@ const Index = () => {
           <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent mb-3">
             Controle Financeiro
           </h1>
-          <p className="text-muted-foreground text-lg">
+          <p className="text-muted-foreground text-lg mb-6">
             Gerencie suas despesas de forma inteligente e visual
           </p>
+          
+          {/* Data Management Buttons */}
+          <div className="flex flex-wrap justify-center gap-3">
+            <Button
+              onClick={handleExportExpenses}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Exportar Dados
+            </Button>
+            
+            <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <Upload className="h-4 w-4" />
+                  Importar Dados
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Importar Dados</DialogTitle>
+                  <DialogDescription>
+                    Selecione um arquivo JSON com seus dados de despesas para importar.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="file" className="text-right">
+                      Arquivo
+                    </Label>
+                    <Input
+                      id="file"
+                      type="file"
+                      accept=".json"
+                      onChange={handleImportExpenses}
+                      ref={setFileInputRef}
+                      className="col-span-3"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsImportDialogOpen(false)}
+                  >
+                    Cancelar
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="destructive" className="flex items-center gap-2">
+                  <Trash2 className="h-4 w-4" />
+                  Limpar Dados
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Limpar Todos os Dados</DialogTitle>
+                  <DialogDescription>
+                    Esta ação irá remover permanentemente todos os dados de despesas. 
+                    Esta ação não pode ser desfeita.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {}}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    onClick={handleClearExpenses}
+                  >
+                    Confirmar Limpeza
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         </header>
 
         <SummaryCards expenses={expenses} />
