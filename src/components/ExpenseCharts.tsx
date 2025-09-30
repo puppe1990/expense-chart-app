@@ -35,23 +35,41 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
   };
 
   const getMonthlyData = () => {
-    const monthlyTotals: { [key: string]: number } = {};
+    const monthlyData: { [key: string]: { income: number; expense: number; investment: number; profit: number; net: number } } = {};
     
     currentAndPastExpenses.forEach((expense) => {
       const date = new Date(expense.date + 'T00:00:00');
       const monthKey = date.toLocaleString("pt-BR", { month: "short", year: "numeric" });
       
-      if (monthlyTotals[monthKey]) {
-        monthlyTotals[monthKey] += expense.amount;
-      } else {
-        monthlyTotals[monthKey] = expense.amount;
+      if (!monthlyData[monthKey]) {
+        monthlyData[monthKey] = { income: 0, expense: 0, investment: 0, profit: 0, net: 0 };
+      }
+      
+      switch (expense.type) {
+        case "income":
+          monthlyData[monthKey].income += expense.amount;
+          break;
+        case "expense":
+          monthlyData[monthKey].expense += expense.amount;
+          break;
+        case "investment":
+          monthlyData[monthKey].investment += expense.amount;
+          break;
+        case "investment_profit":
+          monthlyData[monthKey].profit += expense.amount;
+          break;
       }
     });
 
-    return Object.entries(monthlyTotals)
-      .map(([month, total]) => ({
+    return Object.entries(monthlyData)
+      .map(([month, data]) => ({
         month,
-        total,
+        income: data.income,
+        expense: data.expense,
+        investment: data.investment,
+        profit: data.profit,
+        net: data.income + data.profit - data.expense - data.investment,
+        total: data.income + data.expense + data.investment + data.profit,
       }))
       .sort((a, b) => {
         const dateA = new Date(a.month);
@@ -215,21 +233,37 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
           </CardContent>
         </Card>
 
-        {/* Gráfico de Barras - Tendência Mensal */}
+        {/* Gráfico de Barras - Análise Mensal Detalhada */}
         <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm hover:shadow-2xl transition-all duration-300">
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-800">
               <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
                 <BarChart3 className="h-5 w-5 text-white" />
               </div>
-              Tendência Mensal
+              Análise Mensal Detalhada
             </CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={350}>
               <BarChart data={monthlyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                 <defs>
-                  <linearGradient id="monthlyGradient" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#10b981" />
+                    <stop offset="100%" stopColor="#059669" />
+                  </linearGradient>
+                  <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#ef4444" />
+                    <stop offset="100%" stopColor="#dc2626" />
+                  </linearGradient>
+                  <linearGradient id="investmentGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#8b5cf6" />
+                    <stop offset="100%" stopColor="#7c3aed" />
+                  </linearGradient>
+                  <linearGradient id="profitGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#f59e0b" />
+                    <stop offset="100%" stopColor="#d97706" />
+                  </linearGradient>
+                  <linearGradient id="netGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#3b82f6" />
                     <stop offset="100%" stopColor="#1d4ed8" />
                   </linearGradient>
@@ -238,7 +272,14 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
                 <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#6b7280' }} />
                 <YAxis tick={{ fontSize: 12, fill: '#6b7280' }} />
                 <Tooltip 
-                  formatter={(value) => [formatCurrency(value as number), 'Total']}
+                  formatter={(value, name) => [
+                    formatCurrency(value as number), 
+                    name === 'income' ? 'Receitas' :
+                    name === 'expense' ? 'Despesas' :
+                    name === 'investment' ? 'Investimentos' :
+                    name === 'profit' ? 'Lucros' :
+                    name === 'net' ? 'Saldo Líquido' : name
+                  ]}
                   contentStyle={{ 
                     backgroundColor: 'white', 
                     border: '1px solid #e5e7eb',
@@ -246,7 +287,12 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
                     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                   }}
                 />
-                <Bar dataKey="total" fill="url(#monthlyGradient)" radius={[6, 6, 0, 0]} />
+                <Legend />
+                <Bar dataKey="income" name="Receitas" fill="url(#incomeGradient)" radius={[2, 2, 0, 0]} />
+                <Bar dataKey="expense" name="Despesas" fill="url(#expenseGradient)" radius={[2, 2, 0, 0]} />
+                <Bar dataKey="investment" name="Investimentos" fill="url(#investmentGradient)" radius={[2, 2, 0, 0]} />
+                <Bar dataKey="profit" name="Lucros" fill="url(#profitGradient)" radius={[2, 2, 0, 0]} />
+                <Bar dataKey="net" name="Saldo Líquido" fill="url(#netGradient)" radius={[2, 2, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -337,31 +383,35 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
         </Card>
       </div>
 
-      {/* Terceira linha - Gráfico de investimentos (se houver dados) */}
-      {investmentProfitData.length > 0 && (
+      {/* Terceira linha - Gráficos de tendência */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Saldo Líquido Mensal */}
         <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm hover:shadow-2xl transition-all duration-300">
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-800">
-              <div className="p-3 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg">
+              <div className="p-3 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl shadow-lg">
                 <TrendingUp className="h-5 w-5 text-white" />
               </div>
-              Evolução dos Lucros de Investimento
+              Saldo Líquido Mensal
             </CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={350}>
-              <LineChart data={investmentProfitData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+              <BarChart data={monthlyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                 <defs>
-                  <linearGradient id="profitGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#059669" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#059669" stopOpacity={0.1}/>
+                  <linearGradient id="netBarGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#3b82f6" />
+                    <stop offset="100%" stopColor="#1d4ed8" />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
                 <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#6b7280' }} />
                 <YAxis tick={{ fontSize: 12, fill: '#6b7280' }} />
                 <Tooltip 
-                  formatter={(value) => [formatCurrency(value as number), 'Lucros']}
+                  formatter={(value) => [
+                    formatCurrency(value as number), 
+                    'Saldo Líquido'
+                  ]}
                   contentStyle={{ 
                     backgroundColor: 'white', 
                     border: '1px solid #e5e7eb',
@@ -369,19 +419,62 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
                     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                   }}
                 />
-                <Line 
-                  type="monotone" 
-                  dataKey="profit" 
-                  stroke="#059669" 
-                  strokeWidth={3}
-                  dot={{ fill: '#059669', strokeWidth: 2, r: 6 }}
-                  activeDot={{ r: 8, stroke: '#059669', strokeWidth: 2 }}
+                <Bar 
+                  dataKey="net" 
+                  fill="url(#netBarGradient)" 
+                  radius={[6, 6, 0, 0]}
                 />
-              </LineChart>
+              </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
-      )}
+
+        {/* Gráfico de investimentos (se houver dados) */}
+        {investmentProfitData.length > 0 && (
+          <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm hover:shadow-2xl transition-all duration-300">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-800">
+                <div className="p-3 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg">
+                  <TrendingUp className="h-5 w-5 text-white" />
+                </div>
+                Evolução dos Lucros de Investimento
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={350}>
+                <LineChart data={investmentProfitData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <defs>
+                    <linearGradient id="profitGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#059669" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#059669" stopOpacity={0.1}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                  <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#6b7280' }} />
+                  <YAxis tick={{ fontSize: 12, fill: '#6b7280' }} />
+                  <Tooltip 
+                    formatter={(value) => [formatCurrency(value as number), 'Lucros']}
+                    contentStyle={{ 
+                      backgroundColor: 'white', 
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="profit" 
+                    stroke="#059669" 
+                    strokeWidth={3}
+                    dot={{ fill: '#059669', strokeWidth: 2, r: 6 }}
+                    activeDot={{ r: 8, stroke: '#059669', strokeWidth: 2 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 };
