@@ -1,73 +1,219 @@
-# Welcome to your Lovable project
+# 💰 Controle Financeiro - Expense Chart App
 
-## Project info
+Uma aplicação moderna e intuitiva para controle de despesas pessoais, construída com React, TypeScript e componentes UI elegantes.
 
-**URL**: https://lovable.dev/projects/1ff3c108-171a-4e39-9dbc-f142953486db
+## ✨ Funcionalidades
 
-## How can I edit this code?
+### 📊 Dashboard Completo
+- **Resumo Financeiro**: Visualização rápida de receitas, despesas e saldo total
+- **Gráficos Interativos**: Análise visual de gastos por categoria e período
+- **Cards de Resumo**: Métricas importantes em tempo real
 
-There are several ways of editing your application.
+### 💳 Gestão de Transações
+- **Adicionar Despesas**: Registro rápido de gastos com categorização
+- **Adicionar Receitas**: Controle de entradas de dinheiro
+- **Empréstimos**: Gestão de dinheiro emprestado e devoluções
+- **Edição e Exclusão**: Modificação fácil de transações existentes
 
-**Use Lovable**
+### 🏷️ Categorização Inteligente
+- **13 Categorias Pré-definidas**: Alimentação, Transporte, Moradia, Saúde, etc.
+- **Ícones e Cores**: Identificação visual rápida
+- **Categorias de Receita**: Salário, Freelance, Investimentos, etc.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/1ff3c108-171a-4e39-9dbc-f142953486db) and start prompting.
+### 📈 Análises e Relatórios
+- **Gráficos de Pizza**: Distribuição de gastos por categoria
+- **Gráficos de Linha**: Evolução temporal das despesas
+- **Filtros por Período**: Análise mensal, semanal ou personalizada
+- **Comparativos**: Receitas vs Despesas
 
-Changes made via Lovable will be committed automatically to this repo.
+### 💾 Importação e Exportação
+- **Exportar Dados**: Backup em formato JSON
+- **Importar Dados**: Restauração de dados salvos
+- **Armazenamento Local**: Dados salvos no navegador
+- **Limpeza de Dados**: Reset completo quando necessário
 
-**Use your preferred IDE**
+## 🚀 Tecnologias Utilizadas
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Frontend
+- **React 18** - Biblioteca principal para interface
+- **TypeScript** - Tipagem estática para maior confiabilidade
+- **Vite** - Build tool moderno e rápido
+- **React Router** - Navegação entre páginas
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### UI/UX
+- **shadcn/ui** - Componentes UI modernos e acessíveis
+- **Radix UI** - Primitivos acessíveis para componentes
+- **Tailwind CSS** - Framework CSS utilitário
+- **Lucide React** - Ícones elegantes e consistentes
 
-Follow these steps:
+### Gráficos e Visualizações
+- **Recharts** - Biblioteca de gráficos para React
+- **React Hook Form** - Gerenciamento de formulários
+- **Zod** - Validação de schemas
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### Estado e Dados
+- **TanStack Query** - Gerenciamento de estado do servidor
+- **Local Storage** - Persistência de dados no navegador
+- **Custom Hooks** - Lógica reutilizável
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## 🛠️ Instalação e Configuração
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Pré-requisitos
+- Node.js (versão 18 ou superior)
+- npm ou yarn
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+### Passos para Instalação
+
+1. **Clone o repositório**
+```bash
+git clone https://github.com/seu-usuario/expense-chart-app.git
+cd expense-chart-app
 ```
 
-**Edit a file directly in GitHub**
+2. **Instale as dependências**
+```bash
+npm install
+# ou
+yarn install
+```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+3. **Execute o projeto em modo de desenvolvimento**
+```bash
+npm run dev
+# ou
+yarn dev
+```
 
-**Use GitHub Codespaces**
+4. **Acesse a aplicação**
+Abra [http://localhost:5173](http://localhost:5173) no seu navegador
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Scripts Disponíveis
 
-## What technologies are used for this project?
+```bash
+# Desenvolvimento
+npm run dev
 
-This project is built with:
+# Build para produção
+npm run build
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+# Preview do build
+npm run preview
 
-## How can I deploy this project?
+# Linting
+npm run lint
+```
 
-Simply open [Lovable](https://lovable.dev/projects/1ff3c108-171a-4e39-9dbc-f142953486db) and click on Share -> Publish.
+## 📱 Como Usar
 
-## Can I connect a custom domain to my Lovable project?
+### 1. Adicionando Transações
+- Clique em "Adicionar Despesa" ou "Adicionar Receita"
+- Preencha os campos obrigatórios (valor, categoria, descrição)
+- Selecione a data da transação
+- Para empréstimos, adicione informações do devedor
 
-Yes, you can!
+### 2. Visualizando Dados
+- **Cards de Resumo**: Veja o total de receitas, despesas e saldo
+- **Lista de Transações**: Histórico completo com opções de edição
+- **Gráficos**: Análise visual dos seus gastos
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### 3. Gerenciando Dados
+- **Exportar**: Baixe um arquivo JSON com todos os dados
+- **Importar**: Restaure dados de um arquivo JSON
+- **Limpar**: Remove todos os dados (use com cuidado!)
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## 🎨 Personalização
+
+### Categorias
+As categorias podem ser personalizadas editando o arquivo `src/pages/Index.tsx`:
+
+```typescript
+const defaultCategories: Category[] = [
+  { id: "food", name: "Alimentação", icon: "🍔", color: "#ef4444" },
+  // Adicione suas próprias categorias aqui
+];
+```
+
+### Temas
+A aplicação suporta temas claro e escuro através do sistema de temas do shadcn/ui.
+
+## 📁 Estrutura do Projeto
+
+```
+src/
+├── components/          # Componentes reutilizáveis
+│   ├── ui/             # Componentes base (shadcn/ui)
+│   ├── ExpenseForm.tsx # Formulário de transações
+│   ├── ExpenseList.tsx # Lista de transações
+│   ├── SummaryCards.tsx # Cards de resumo
+│   └── ExpenseCharts.tsx # Gráficos e visualizações
+├── hooks/              # Custom hooks
+│   └── use-local-storage.ts # Hook para localStorage
+├── pages/              # Páginas da aplicação
+│   ├── Index.tsx       # Página principal
+│   └── NotFound.tsx    # Página 404
+├── lib/                # Utilitários
+│   └── utils.ts        # Funções auxiliares
+└── App.tsx             # Componente raiz
+```
+
+## 🔧 Desenvolvimento
+
+### Adicionando Novas Funcionalidades
+1. Crie componentes na pasta `src/components/`
+2. Use os componentes base do `src/components/ui/`
+3. Implemente custom hooks em `src/hooks/` quando necessário
+4. Mantenha a tipagem TypeScript consistente
+
+### Padrões de Código
+- Use TypeScript para todas as funcionalidades
+- Siga as convenções do ESLint configurado
+- Mantenha componentes pequenos e focados
+- Use custom hooks para lógica reutilizável
+
+## 🚀 Deploy
+
+### Vercel (Recomendado)
+1. Conecte seu repositório ao Vercel
+2. Configure as variáveis de ambiente se necessário
+3. Deploy automático a cada push
+
+### Netlify
+1. Conecte o repositório
+2. Configure o build command: `npm run build`
+3. Configure o publish directory: `dist`
+
+### Outras Plataformas
+A aplicação gera arquivos estáticos na pasta `dist/` que podem ser servidos por qualquer servidor web.
+
+## 🤝 Contribuição
+
+Contribuições são bem-vindas! Para contribuir:
+
+1. Faça um fork do projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
+3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
+4. Push para a branch (`git push origin feature/AmazingFeature`)
+5. Abra um Pull Request
+
+## 📄 Licença
+
+Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalhes.
+
+## 🙏 Agradecimentos
+
+- [shadcn/ui](https://ui.shadcn.com/) - Componentes UI incríveis
+- [Radix UI](https://www.radix-ui.com/) - Primitivos acessíveis
+- [Recharts](https://recharts.org/) - Biblioteca de gráficos
+- [Lucide](https://lucide.dev/) - Ícones elegantes
+- [Tailwind CSS](https://tailwindcss.com/) - Framework CSS utilitário
+
+## 📞 Suporte
+
+Se você encontrar algum problema ou tiver sugestões:
+
+1. Abra uma [issue](https://github.com/seu-usuario/expense-chart-app/issues)
+2. Entre em contato através do email: seu-email@exemplo.com
+
+---
+
+**Desenvolvido com ❤️ para ajudar no controle financeiro pessoal**
