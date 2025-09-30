@@ -1,10 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Trash2, Receipt, CreditCard, FileText, Tag, RotateCcw, ArrowRightLeft, Edit } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Trash2, Receipt, CreditCard, FileText, Tag, RotateCcw, ArrowRightLeft, Edit, Search, X } from "lucide-react";
 import { Category, Expense } from "./ExpenseForm";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useState, useMemo } from "react";
 
 interface ExpenseListProps {
   expenses: Expense[];
@@ -14,6 +16,8 @@ interface ExpenseListProps {
 }
 
 export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpense }: ExpenseListProps) => {
+  const [searchQuery, setSearchQuery] = useState("");
+
   const getCategoryInfo = (categoryId: string) => {
     return categories.find((cat) => cat.id === categoryId);
   };
@@ -60,18 +64,67 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
     return colors[type] || "text-gray-600 dark:text-gray-400";
   };
 
+  // Filter expenses based on search query
+  const filteredExpenses = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return expenses;
+    }
+
+    const query = searchQuery.toLowerCase().trim();
+    return expenses.filter((expense) => {
+      const category = getCategoryInfo(expense.category);
+      const categoryName = category?.name?.toLowerCase() || "";
+      
+      return (
+        expense.description.toLowerCase().includes(query) ||
+        categoryName.includes(query) ||
+        expense.notes?.toLowerCase().includes(query) ||
+        expense.tags?.some(tag => tag.toLowerCase().includes(query)) ||
+        expense.fromAccount?.toLowerCase().includes(query) ||
+        expense.toAccount?.toLowerCase().includes(query) ||
+        format(new Date(expense.date + 'T00:00:00'), "dd MMM yyyy", { locale: ptBR }).toLowerCase().includes(query)
+      );
+    });
+  }, [expenses, searchQuery, categories]);
+
   return (
     <Card className="group relative overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 border-0 bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent"></div>
       <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-primary/10 to-transparent rounded-full -translate-y-20 translate-x-20"></div>
       
       <CardHeader className="relative">
-        <CardTitle className="flex items-center gap-3 text-lg font-bold">
-          <div className="p-2 bg-gradient-to-br from-primary to-primary/80 rounded-xl shadow-lg">
-            <Receipt className="h-5 w-5 text-white" />
-          </div>
-          Transações Recentes
-        </CardTitle>
+        <div className="flex items-center justify-between mb-4">
+          <CardTitle className="flex items-center gap-3 text-lg font-bold">
+            <div className="p-2 bg-gradient-to-br from-primary to-primary/80 rounded-xl shadow-lg">
+              <Receipt className="h-5 w-5 text-white" />
+            </div>
+            Transações Recentes
+            {searchQuery && (
+              <span className="text-sm font-normal text-muted-foreground ml-2">
+                ({filteredExpenses.length} de {expenses.length})
+              </span>
+            )}
+          </CardTitle>
+        </div>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar transações..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 pr-10 bg-white/50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary/20 focus:border-primary/50"
+          />
+          {searchQuery && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSearchQuery("")}
+              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="relative">
         {expenses.length === 0 ? (
@@ -82,9 +135,17 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
             <p className="text-base font-medium">Nenhuma transação registrada ainda.</p>
             <p className="text-xs mt-2 text-gray-500">Adicione sua primeira transação acima!</p>
           </div>
+        ) : filteredExpenses.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 rounded-full flex items-center justify-center">
+              <Search className="h-8 w-8 text-gray-400" />
+            </div>
+            <p className="text-base font-medium">Nenhuma transação encontrada.</p>
+            <p className="text-xs mt-2 text-gray-500">Tente ajustar os termos de busca.</p>
+          </div>
         ) : (
           <div className="space-y-4">
-            {expenses.map((expense) => {
+            {filteredExpenses.map((expense) => {
               const category = getCategoryInfo(expense.category);
               const isIncome = expense.type === "income";
               const isTransfer = expense.type === "transfer";
