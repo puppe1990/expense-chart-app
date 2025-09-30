@@ -53,8 +53,8 @@ export const SummaryCards = ({ expenses }: SummaryCardsProps) => {
 
   return (
     <div className="space-y-6 mb-8">
-      {/* Main financial overview */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Main financial overview - 3 cards in a row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         <Card className="group relative overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 border-0 bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/50 dark:to-emerald-900/30 hover:scale-105">
           <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent"></div>
           <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-400/20 to-transparent rounded-full -translate-y-16 translate-x-16"></div>
@@ -99,7 +99,7 @@ export const SummaryCards = ({ expenses }: SummaryCardsProps) => {
           </CardContent>
         </Card>
 
-        <Card className={`group relative overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 border-0 hover:scale-105 ${
+        <Card className={`group relative overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 border-0 hover:scale-105 md:col-span-2 xl:col-span-1 ${
           balance >= 0 
             ? 'bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/50 dark:to-blue-900/30' 
             : 'bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/50 dark:to-orange-900/30'
@@ -152,8 +152,8 @@ export const SummaryCards = ({ expenses }: SummaryCardsProps) => {
         </Card>
       </div>
 
-      {/* Additional transaction types */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Secondary transaction types - 3 cards in a row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         <Card className="group relative overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 border-0 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/50 dark:to-purple-900/30 hover:scale-105">
           <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent"></div>
           <CardContent className="relative pt-4 pb-4">
