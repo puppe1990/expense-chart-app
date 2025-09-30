@@ -35,8 +35,8 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense }: ExpenseLi
       <CardContent>
         {expenses.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            <p>Nenhuma despesa registrada ainda.</p>
-            <p className="text-sm mt-2">Adicione sua primeira despesa acima!</p>
+            <p>Nenhuma transação registrada ainda.</p>
+            <p className="text-sm mt-2">Adicione sua primeira transação acima!</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -69,8 +69,8 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense }: ExpenseLi
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="font-bold text-destructive">
-                      {formatCurrency(expense.amount)}
+                    <span className={`font-bold ${expense.type === "income" ? "text-success" : "text-destructive"}`}>
+                      {expense.type === "income" ? "+" : "-"}{formatCurrency(expense.amount)}
                     </span>
                     <Button
                       variant="ghost"

@@ -26,6 +26,7 @@ export interface Expense {
   amount: number;
   category: string;
   date: string;
+  type: "income" | "expense";
 }
 
 interface ExpenseFormProps {
@@ -38,6 +39,7 @@ export const ExpenseForm = ({ categories, onAddExpense }: ExpenseFormProps) => {
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [type, setType] = useState<"income" | "expense">("expense");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,6 +54,7 @@ export const ExpenseForm = ({ categories, onAddExpense }: ExpenseFormProps) => {
       amount: parseFloat(amount),
       category,
       date,
+      type,
     };
 
     onAddExpense(expense);
@@ -59,7 +62,7 @@ export const ExpenseForm = ({ categories, onAddExpense }: ExpenseFormProps) => {
     setAmount("");
     setCategory("");
     setDate(new Date().toISOString().split("T")[0]);
-    toast.success("Despesa adicionada com sucesso!");
+    toast.success(type === "income" ? "Entrada adicionada com sucesso!" : "Despesa adicionada com sucesso!");
   };
 
   return (
@@ -67,11 +70,34 @@ export const ExpenseForm = ({ categories, onAddExpense }: ExpenseFormProps) => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <PlusCircle className="h-5 w-5 text-primary" />
-          Nova Despesa
+          Nova Transação
         </CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="type">Tipo</Label>
+            <Select value={type} onValueChange={(value: "income" | "expense") => setType(value)}>
+              <SelectTrigger className="transition-all duration-200 focus:scale-[1.02]">
+                <SelectValue placeholder="Selecione o tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="income">
+                  <span className="flex items-center gap-2">
+                    <span>💰</span>
+                    <span>Entrada</span>
+                  </span>
+                </SelectItem>
+                <SelectItem value="expense">
+                  <span className="flex items-center gap-2">
+                    <span>💸</span>
+                    <span>Despesa</span>
+                  </span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="description">Descrição</Label>
             <Input
@@ -133,7 +159,7 @@ export const ExpenseForm = ({ categories, onAddExpense }: ExpenseFormProps) => {
             className="w-full bg-gradient-primary hover:opacity-90 transition-all duration-200 hover:scale-[1.02]"
           >
             <PlusCircle className="mr-2 h-4 w-4" />
-            Adicionar Despesa
+            {type === "income" ? "Adicionar Entrada" : "Adicionar Despesa"}
           </Button>
         </form>
       </CardContent>
