@@ -137,19 +137,24 @@ export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [] }: Ex
   };
 
   return (
-    <Card className="shadow-lg hover:shadow-xl transition-all duration-300">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <PlusCircle className="h-5 w-5 text-primary" />
+    <Card className="group relative overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 border-0 bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent"></div>
+      <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-primary/10 to-transparent rounded-full -translate-y-20 translate-x-20"></div>
+      
+      <CardHeader className="relative">
+        <CardTitle className="flex items-center gap-3 text-2xl font-bold">
+          <div className="p-2 bg-gradient-to-br from-primary to-primary/80 rounded-xl shadow-lg">
+            <PlusCircle className="h-6 w-6 text-white" />
+          </div>
           Nova Transação
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="type">Tipo de Transação</Label>
+      <CardContent className="relative">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-3">
+            <Label htmlFor="type" className="text-sm font-semibold text-gray-700 dark:text-gray-300">Tipo de Transação</Label>
             <Select value={type} onValueChange={(value: Expense["type"]) => setType(value)}>
-              <SelectTrigger className="transition-all duration-200 focus:scale-[1.02]">
+              <SelectTrigger className="h-12 rounded-xl border-2 border-gray-200 dark:border-gray-700 focus:border-primary transition-all duration-300 focus:scale-[1.02] shadow-sm hover:shadow-md">
                 <SelectValue placeholder="Selecione o tipo" />
               </SelectTrigger>
               <SelectContent>
@@ -199,20 +204,20 @@ export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [] }: Ex
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="description">Descrição</Label>
+          <div className="space-y-3">
+            <Label htmlFor="description" className="text-sm font-semibold text-gray-700 dark:text-gray-300">Descrição</Label>
             <Input
               id="description"
               placeholder="Ex: Supermercado"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="transition-all duration-200 focus:scale-[1.02]"
+              className="h-12 rounded-xl border-2 border-gray-200 dark:border-gray-700 focus:border-primary transition-all duration-300 focus:scale-[1.02] shadow-sm hover:shadow-md"
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="amount">Valor (R$)</Label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <Label htmlFor="amount" className="text-sm font-semibold text-gray-700 dark:text-gray-300">Valor (R$)</Label>
               <Input
                 id="amount"
                 type="number"
@@ -220,26 +225,26 @@ export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [] }: Ex
                 placeholder="0.00"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="transition-all duration-200 focus:scale-[1.02]"
+                className="h-12 rounded-xl border-2 border-gray-200 dark:border-gray-700 focus:border-primary transition-all duration-300 focus:scale-[1.02] shadow-sm hover:shadow-md"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="date">Data</Label>
+            <div className="space-y-3">
+              <Label htmlFor="date" className="text-sm font-semibold text-gray-700 dark:text-gray-300">Data</Label>
               <Input
                 id="date"
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="transition-all duration-200 focus:scale-[1.02]"
+                className="h-12 rounded-xl border-2 border-gray-200 dark:border-gray-700 focus:border-primary transition-all duration-300 focus:scale-[1.02] shadow-sm hover:shadow-md"
               />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="category">Categoria</Label>
+          <div className="space-y-3">
+            <Label htmlFor="category" className="text-sm font-semibold text-gray-700 dark:text-gray-300">Categoria</Label>
             <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className="transition-all duration-200 focus:scale-[1.02]">
+              <SelectTrigger className="h-12 rounded-xl border-2 border-gray-200 dark:border-gray-700 focus:border-primary transition-all duration-300 focus:scale-[1.02] shadow-sm hover:shadow-md">
                 <SelectValue placeholder="Selecione uma categoria" />
               </SelectTrigger>
               <SelectContent>
@@ -440,9 +445,9 @@ export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [] }: Ex
 
           <Button
             type="submit"
-            className="w-full bg-gradient-primary hover:opacity-90 transition-all duration-200 hover:scale-[1.02]"
+            className="w-full h-14 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white font-semibold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] group"
           >
-            <PlusCircle className="mr-2 h-4 w-4" />
+            <PlusCircle className="mr-3 h-5 w-5 group-hover:rotate-90 transition-transform duration-300" />
             {type === "income" ? "Adicionar Entrada" : 
              type === "expense" ? "Adicionar Despesa" :
              type === "transfer" ? "Adicionar Transferência" :

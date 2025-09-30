@@ -91,25 +91,34 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <header className="mb-12 text-center">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="p-3 bg-gradient-primary rounded-full">
-              <Wallet className="h-8 w-8 text-white" />
+        <header className="mb-16 text-center relative">
+          {/* Background decoration */}
+          <div className="absolute inset-0 -top-8 -left-4 -right-4 h-32 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 rounded-3xl blur-3xl"></div>
+          
+          <div className="relative z-10">
+            <div className="flex items-center justify-center gap-4 mb-6">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-primary to-primary/60 rounded-full blur-lg opacity-30"></div>
+                <div className="relative p-4 bg-gradient-to-br from-primary to-primary/80 rounded-full shadow-2xl">
+                  <Wallet className="h-10 w-10 text-white" />
+                </div>
+              </div>
             </div>
+            
+            <h1 className="text-5xl md:text-6xl font-black bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent mb-4 tracking-tight">
+              Controle Financeiro
+            </h1>
+            <p className="text-muted-foreground text-xl mb-8 max-w-2xl mx-auto leading-relaxed">
+              Gerencie suas despesas de forma inteligente e visual com insights poderosos
+            </p>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent mb-3">
-            Controle Financeiro
-          </h1>
-          <p className="text-muted-foreground text-lg mb-6">
-            Gerencie suas despesas de forma inteligente e visual
-          </p>
           
           {/* Data Management Buttons */}
-          <div className="flex flex-wrap justify-center gap-3">
+          <div className="flex flex-wrap justify-center gap-4 mt-8">
             <Button
               onClick={handleExportExpenses}
               variant="outline"
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 px-6 py-3 rounded-xl border-2 hover:border-primary/50 hover:bg-primary/5 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl"
             >
               <Download className="h-4 w-4" />
               Exportar Dados
@@ -117,7 +126,7 @@ const Index = () => {
             
             <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" className="flex items-center gap-2">
+                <Button variant="outline" className="flex items-center gap-2 px-6 py-3 rounded-xl border-2 hover:border-primary/50 hover:bg-primary/5 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl">
                   <Upload className="h-4 w-4" />
                   Importar Dados
                 </Button>
@@ -158,7 +167,7 @@ const Index = () => {
             
             <Dialog>
               <DialogTrigger asChild>
-                <Button variant="destructive" className="flex items-center gap-2">
+                <Button variant="destructive" className="flex items-center gap-2 px-6 py-3 rounded-xl border-2 hover:border-destructive/50 hover:bg-destructive/5 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl">
                   <Trash2 className="h-4 w-4" />
                   Limpar Dados
                 </Button>
@@ -194,15 +203,15 @@ const Index = () => {
 
         <SummaryCards expenses={expenses} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <div className="lg:col-span-1">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-12">
+          <div className="xl:col-span-1">
             <ExpenseForm 
               categories={categories} 
               onAddExpense={handleAddExpense} 
               existingLoans={expenses.filter(e => e.type === "loan")}
             />
           </div>
-          <div className="lg:col-span-2">
+          <div className="xl:col-span-2">
             <ExpenseList
               expenses={expenses}
               categories={categories}

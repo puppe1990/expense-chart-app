@@ -112,15 +112,20 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-      <Card className="shadow-lg hover:shadow-xl transition-all duration-300">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <PieChartIcon className="h-5 w-5 text-primary" />
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+      <Card className="group relative overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 border-0 bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 hover:scale-105">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent"></div>
+        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/10 to-transparent rounded-full -translate-y-16 translate-x-16"></div>
+        
+        <CardHeader className="relative">
+          <CardTitle className="flex items-center gap-3 text-xl font-bold">
+            <div className="p-2 bg-gradient-to-br from-primary to-primary/80 rounded-xl shadow-lg">
+              <PieChartIcon className="h-5 w-5 text-white" />
+            </div>
             Despesas por Categoria
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="relative">
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
@@ -144,42 +149,64 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
         </CardContent>
       </Card>
 
-      <Card className="shadow-lg hover:shadow-xl transition-all duration-300">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-primary" />
+      <Card className="group relative overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 border-0 bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 hover:scale-105">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent"></div>
+        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-transparent rounded-full -translate-y-16 translate-x-16"></div>
+        
+        <CardHeader className="relative">
+          <CardTitle className="flex items-center gap-3 text-xl font-bold">
+            <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
+              <BarChart3 className="h-5 w-5 text-white" />
+            </div>
             Tendência Mensal
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="relative">
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={monthlyData}>
+              <defs>
+                <linearGradient id="primaryGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="hsl(var(--primary))" />
+                  <stop offset="100%" stopColor="hsl(var(--primary) / 0.7)" />
+                </linearGradient>
+              </defs>
               <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
               <XAxis dataKey="month" tick={{ fontSize: 12 }} />
               <YAxis tick={{ fontSize: 12 }} />
               <Tooltip formatter={(value) => formatCurrency(value as number)} />
-              <Bar dataKey="total" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="total" fill="url(#primaryGradient)" radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
 
       {investmentProfitData.length > 0 && (
-        <Card className="shadow-lg hover:shadow-xl transition-all duration-300">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-emerald-600" />
+        <Card className="group relative overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 border-0 bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 hover:scale-105">
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent"></div>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-500/10 to-transparent rounded-full -translate-y-16 translate-x-16"></div>
+          
+          <CardHeader className="relative">
+            <CardTitle className="flex items-center gap-3 text-xl font-bold">
+              <div className="p-2 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg">
+                <BarChart3 className="h-5 w-5 text-white" />
+              </div>
               Lucros de Investimento
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="relative">
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={investmentProfitData}>
+                <defs>
+                  <linearGradient id="emeraldGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#059669" />
+                    <stop offset="100%" stopColor="#059669" stopOpacity={0.7} />
+                  </linearGradient>
+                </defs>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
                 <XAxis dataKey="month" tick={{ fontSize: 12 }} />
                 <YAxis tick={{ fontSize: 12 }} />
                 <Tooltip formatter={(value) => formatCurrency(value as number)} />
-                <Bar dataKey="profit" fill="#059669" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="profit" fill="url(#emeraldGradient)" radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>

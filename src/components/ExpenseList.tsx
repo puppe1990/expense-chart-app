@@ -63,21 +63,29 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
   };
 
   return (
-    <Card className="shadow-lg">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Receipt className="h-5 w-5 text-primary" />
+    <Card className="group relative overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 border-0 bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent"></div>
+      <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-primary/10 to-transparent rounded-full -translate-y-20 translate-x-20"></div>
+      
+      <CardHeader className="relative">
+        <CardTitle className="flex items-center gap-3 text-2xl font-bold">
+          <div className="p-2 bg-gradient-to-br from-primary to-primary/80 rounded-xl shadow-lg">
+            <Receipt className="h-6 w-6 text-white" />
+          </div>
           Transações Recentes
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="relative">
         {expenses.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <p>Nenhuma transação registrada ainda.</p>
-            <p className="text-sm mt-2">Adicione sua primeira transação acima!</p>
+          <div className="text-center py-12 text-muted-foreground">
+            <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 rounded-full flex items-center justify-center">
+              <Receipt className="h-8 w-8 text-gray-400" />
+            </div>
+            <p className="text-lg font-medium">Nenhuma transação registrada ainda.</p>
+            <p className="text-sm mt-2 text-gray-500">Adicione sua primeira transação acima!</p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {expenses.map((expense) => {
               const category = getCategoryInfo(expense.category);
               const isIncome = expense.type === "income";
@@ -86,12 +94,12 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
               return (
                 <div
                   key={expense.id}
-                  className="p-4 rounded-lg border bg-gradient-card hover:shadow-md transition-all duration-200 hover:scale-[1.01]"
+                  className="group/item relative p-6 rounded-2xl border-2 border-gray-100 dark:border-gray-700 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 hover:shadow-lg hover:shadow-primary/10 transition-all duration-300 hover:scale-[1.02] hover:border-primary/20"
                 >
                   {/* Main transaction info */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4 flex-1">
-                      <div className="text-2xl">
+                      <div className="text-3xl p-3 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-xl group-hover/item:scale-110 transition-transform duration-300">
                         {isTransfer ? (
                           <div className="flex items-center gap-1">
                             <span>{getTransactionTypeIcon(expense.type)}</span>
@@ -102,43 +110,44 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{expense.description}</p>
-                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        <p className="font-semibold text-lg truncate text-gray-900 dark:text-gray-100">{expense.description}</p>
+                        <div className="flex items-center gap-2 mt-2 flex-wrap">
                           <Badge
                             variant="secondary"
-                            className="text-xs"
+                            className="text-xs font-medium px-3 py-1 rounded-full"
                             style={{
                               backgroundColor: category?.color + "20",
                               color: category?.color,
+                              border: `1px solid ${category?.color}40`,
                             }}
                           >
                             {category?.name}
                           </Badge>
-                          <Badge variant="outline" className="text-xs">
+                          <Badge variant="outline" className="text-xs font-medium px-3 py-1 rounded-full border-gray-300 dark:border-gray-600">
                             {getPaymentMethodIcon(expense.paymentMethod)}
                           </Badge>
                           {expense.isRecurring && (
-                            <Badge variant="outline" className="text-xs text-purple-600 border-purple-600">
+                            <Badge variant="outline" className="text-xs font-medium px-3 py-1 rounded-full text-purple-600 border-purple-600 bg-purple-50 dark:bg-purple-950/20">
                               <RotateCcw className="h-3 w-3 mr-1" />
                               Recorrente
                             </Badge>
                           )}
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
                             {format(new Date(expense.date + 'T00:00:00'), "dd MMM yyyy", { locale: ptBR })}
                           </span>
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className={`font-bold ${getTransactionTypeColor(expense.type)}`}>
+                    <div className="flex items-center gap-4">
+                      <span className={`text-2xl font-black ${getTransactionTypeColor(expense.type)}`}>
                         {isIncome ? "+" : isTransfer ? "" : "-"}{formatCurrency(expense.amount)}
                       </span>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-2">
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => onEditExpense(expense)}
-                          className="hover:bg-primary/10 hover:text-primary transition-colors"
+                          className="h-10 w-10 rounded-xl hover:bg-primary/10 hover:text-primary transition-all duration-300 hover:scale-110"
                           title="Editar transação"
                         >
                           <Edit className="h-4 w-4" />
@@ -147,7 +156,7 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
                           variant="ghost"
                           size="icon"
                           onClick={() => onDeleteExpense(expense.id)}
-                          className="hover:bg-destructive/10 hover:text-destructive transition-colors"
+                          className="h-10 w-10 rounded-xl hover:bg-destructive/10 hover:text-destructive transition-all duration-300 hover:scale-110"
                           title="Excluir transação"
                         >
                           <Trash2 className="h-4 w-4" />
