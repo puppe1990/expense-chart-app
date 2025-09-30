@@ -28,7 +28,7 @@ export interface Expense {
   amount: number;
   category: string;
   date: string;
-  type: "income" | "expense" | "transfer" | "investment" | "loan" | "savings";
+  type: "income" | "expense" | "transfer" | "investment" | "investment_profit" | "loan" | "savings";
   paymentMethod?: "cash" | "card" | "bank_transfer" | "digital_wallet" | "check" | "other";
   notes?: string;
   tags?: string[];
@@ -128,6 +128,7 @@ export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [] }: Ex
       expense: "Despesa adicionada com sucesso!",
       transfer: "Transferência adicionada com sucesso!",
       investment: "Investimento adicionado com sucesso!",
+      investment_profit: "Lucro de investimento adicionado com sucesso!",
       loan: "Empréstimo adicionado com sucesso!",
       savings: "Poupança adicionada com sucesso!",
     };
@@ -174,6 +175,12 @@ export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [] }: Ex
                   <span className="flex items-center gap-2">
                     <span>📈</span>
                     <span>Investimento</span>
+                  </span>
+                </SelectItem>
+                <SelectItem value="investment_profit">
+                  <span className="flex items-center gap-2">
+                    <span>💰</span>
+                    <span>Lucro de Investimento</span>
                   </span>
                 </SelectItem>
                 <SelectItem value="loan">
@@ -439,6 +446,7 @@ export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [] }: Ex
              type === "expense" ? "Adicionar Despesa" :
              type === "transfer" ? "Adicionar Transferência" :
              type === "investment" ? "Adicionar Investimento" :
+             type === "investment_profit" ? "Adicionar Lucro de Investimento" :
              type === "loan" ? "Adicionar Empréstimo" :
              "Adicionar Poupança"}
           </Button>

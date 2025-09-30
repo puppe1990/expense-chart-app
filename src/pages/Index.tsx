@@ -24,6 +24,7 @@ const defaultCategories: Category[] = [
   { id: "salary", name: "Salário", icon: "💰", color: "#10b981" },
   { id: "freelance", name: "Freelance", icon: "💼", color: "#3b82f6" },
   { id: "investment", name: "Investimentos", icon: "📈", color: "#8b5cf6" },
+  { id: "investment_profit", name: "Lucros de Investimento", icon: "💎", color: "#059669" },
   { id: "food", name: "Alimentação", icon: "🍔", color: "#ef4444" },
   { id: "transport", name: "Transporte", icon: "🚗", color: "#f59e0b" },
   { id: "housing", name: "Moradia", icon: "🏠", color: "#8b5cf6" },

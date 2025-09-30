@@ -60,8 +60,37 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
       });
   };
 
+  const getInvestmentProfitData = () => {
+    const monthlyProfits: { [key: string]: number } = {};
+    
+    currentAndPastExpenses
+      .filter((expense) => expense.type === "investment_profit")
+      .forEach((expense) => {
+        const date = new Date(expense.date + 'T00:00:00');
+        const monthKey = date.toLocaleString("pt-BR", { month: "short", year: "numeric" });
+        
+        if (monthlyProfits[monthKey]) {
+          monthlyProfits[monthKey] += expense.amount;
+        } else {
+          monthlyProfits[monthKey] = expense.amount;
+        }
+      });
+
+    return Object.entries(monthlyProfits)
+      .map(([month, total]) => ({
+        month,
+        profit: total,
+      }))
+      .sort((a, b) => {
+        const dateA = new Date(a.month);
+        const dateB = new Date(b.month);
+        return dateA.getTime() - dateB.getTime();
+      });
+  };
+
   const categoryData = getCategoryData();
   const monthlyData = getMonthlyData();
+  const investmentProfitData = getInvestmentProfitData();
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -83,7 +112,7 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
       <Card className="shadow-lg hover:shadow-xl transition-all duration-300">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -134,6 +163,28 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
           </ResponsiveContainer>
         </CardContent>
       </Card>
+
+      {investmentProfitData.length > 0 && (
+        <Card className="shadow-lg hover:shadow-xl transition-all duration-300">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-emerald-600" />
+              Lucros de Investimento
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={investmentProfitData}>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
+                <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 12 }} />
+                <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                <Bar dataKey="profit" fill="#059669" radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

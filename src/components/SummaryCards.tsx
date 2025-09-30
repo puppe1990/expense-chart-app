@@ -30,6 +30,10 @@ export const SummaryCards = ({ expenses }: SummaryCardsProps) => {
     .filter((e) => e.type === "investment")
     .reduce((sum, expense) => sum + expense.amount, 0);
 
+  const totalInvestmentProfits = currentAndPastExpenses
+    .filter((e) => e.type === "investment_profit")
+    .reduce((sum, expense) => sum + expense.amount, 0);
+
   const totalSavings = currentAndPastExpenses
     .filter((e) => e.type === "savings")
     .reduce((sum, expense) => sum + expense.amount, 0);
@@ -47,7 +51,8 @@ export const SummaryCards = ({ expenses }: SummaryCardsProps) => {
   const remainingLoanBalance = totalLoans - totalLoanPayments;
 
   // Transfers don't affect the balance as they're just moving money between accounts
-  const balance = totalIncome - totalExpenses;
+  // Investment profits are considered income for balance calculation
+  const balance = totalIncome + totalInvestmentProfits - totalExpenses;
 
   return (
     <div className="space-y-6 mb-8">
@@ -160,18 +165,20 @@ export const SummaryCards = ({ expenses }: SummaryCardsProps) => {
           </CardContent>
         </Card>
 
-        <Card className="shadow-lg hover:shadow-xl transition-all duration-300 border-l-4 border-l-blue-500 bg-gradient-card">
+        <Card className="shadow-lg hover:shadow-xl transition-all duration-300 border-l-4 border-l-emerald-600 bg-gradient-card">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Transferências</p>
+                <p className="text-sm font-medium text-muted-foreground">Lucros de Investimento</p>
                 <p className="text-2xl font-bold text-foreground mt-1">
-                  {currentAndPastExpenses.filter((e) => e.type === "transfer").length}
+                  {formatCurrency(totalInvestmentProfits)}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">transações</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {currentAndPastExpenses.filter((e) => e.type === "investment_profit").length} transações
+                </p>
               </div>
-              <div className="p-2 bg-blue-500/10 rounded-full">
-                <TrendingUp className="h-5 w-5 text-blue-500 rotate-90" />
+              <div className="p-2 bg-emerald-600/10 rounded-full">
+                <TrendingUp className="h-5 w-5 text-emerald-600" />
               </div>
             </div>
           </CardContent>
