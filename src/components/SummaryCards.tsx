@@ -34,6 +34,14 @@ export const SummaryCards = ({ expenses }: SummaryCardsProps) => {
     .filter((e) => e.type === "loan")
     .reduce((sum, expense) => sum + expense.amount, 0);
 
+  // Calculate loan payments
+  const totalLoanPayments = expenses
+    .filter((e) => e.type === "expense" && e.isLoanPayment)
+    .reduce((sum, expense) => sum + expense.amount, 0);
+
+  // Calculate remaining loan balance
+  const remainingLoanBalance = totalLoans - totalLoanPayments;
+
   // Transfers don't affect the balance as they're just moving money between accounts
   const balance = totalIncome - totalExpenses;
 
@@ -132,6 +140,14 @@ export const SummaryCards = ({ expenses }: SummaryCardsProps) => {
                 <p className="text-2xl font-bold text-foreground mt-1">
                   {formatCurrency(totalLoans)}
                 </p>
+                <div className="text-xs text-muted-foreground mt-1 space-y-1">
+                  <p>Saldo Restante: <span className={remainingLoanBalance > 0 ? 'text-destructive' : 'text-success'}>
+                    {formatCurrency(remainingLoanBalance)}
+                  </span></p>
+                  {totalLoanPayments > 0 && (
+                    <p>Pago: <span className="text-success">{formatCurrency(totalLoanPayments)}</span></p>
+                  )}
+                </div>
               </div>
               <div className="p-2 bg-orange-500/10 rounded-full">
                 <CreditCard className="h-5 w-5 text-orange-500" />

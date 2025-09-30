@@ -29,6 +29,7 @@ interface EditTransactionDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (expense: Omit<Expense, "id">) => void;
+  existingLoans?: Expense[];
 }
 
 export const EditTransactionDialog = ({ 
@@ -36,7 +37,8 @@ export const EditTransactionDialog = ({
   categories, 
   isOpen, 
   onClose, 
-  onSave 
+  onSave,
+  existingLoans = []
 }: EditTransactionDialogProps) => {
   const [formData, setFormData] = useState({
     description: "",
@@ -52,6 +54,8 @@ export const EditTransactionDialog = ({
     recurringEndDate: "",
     fromAccount: "",
     toAccount: "",
+    isLoanPayment: false,
+    relatedLoanId: "",
   });
 
   // Update form data when expense changes
@@ -71,6 +75,8 @@ export const EditTransactionDialog = ({
         recurringEndDate: expense.recurringEndDate || "",
         fromAccount: expense.fromAccount || "",
         toAccount: expense.toAccount || "",
+        isLoanPayment: expense.isLoanPayment || false,
+        relatedLoanId: expense.relatedLoanId || "",
       });
     }
   }, [expense]);
@@ -89,6 +95,12 @@ export const EditTransactionDialog = ({
       return;
     }
 
+    // Special validation for loan payments
+    if (formData.isLoanPayment && !formData.relatedLoanId) {
+      toast.error("Para pagamentos de empréstimo, selecione o empréstimo relacionado");
+      return;
+    }
+
     const updatedExpense: Omit<Expense, "id"> = {
       description: formData.description,
       amount: parseFloat(formData.amount),
@@ -103,6 +115,8 @@ export const EditTransactionDialog = ({
       recurringEndDate: formData.isRecurring && formData.recurringEndDate ? formData.recurringEndDate : undefined,
       fromAccount: formData.type === "transfer" ? formData.fromAccount : undefined,
       toAccount: formData.type === "transfer" ? formData.toAccount : undefined,
+      isLoanPayment: formData.isLoanPayment || undefined,
+      relatedLoanId: formData.isLoanPayment ? formData.relatedLoanId : undefined,
     };
 
     onSave(updatedExpense);
@@ -287,6 +301,67 @@ export const EditTransactionDialog = ({
                   className="transition-all duration-200 focus:scale-[1.02]"
                 />
               </div>
+            </div>
+          )}
+
+          {/* Loan Payment Section (only for expense type) */}
+          {formData.type === "expense" && (
+            <div className="space-y-3 p-4 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-800">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="isLoanPayment"
+                  checked={formData.isLoanPayment}
+                  onCheckedChange={(checked) => handleInputChange("isLoanPayment", checked)}
+                />
+                <Label htmlFor="isLoanPayment" className="flex items-center gap-2">
+                  <CreditCard className="h-4 w-4" />
+                  Esta é um pagamento de empréstimo
+                </Label>
+              </div>
+              
+              {formData.isLoanPayment && (
+                <div className="space-y-2">
+                  <Label htmlFor="relatedLoanId">Selecionar Empréstimo</Label>
+                  <Select value={formData.relatedLoanId} onValueChange={(value) => handleInputChange("relatedLoanId", value)}>
+                    <SelectTrigger className="transition-all duration-200 focus:scale-[1.02]">
+                      <SelectValue placeholder="Selecione o empréstimo que está sendo pago" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {existingLoans.length > 0 ? (
+                        existingLoans.map((loan) => {
+                          const formatCurrency = (value: number) => {
+                            return new Intl.NumberFormat("pt-BR", {
+                              style: "currency",
+                              currency: "BRL",
+                            }).format(value);
+                          };
+                          
+                          return (
+                            <SelectItem key={loan.id} value={loan.id}>
+                              <span className="flex items-center gap-2">
+                                <span>🏦</span>
+                                <span>{loan.description}</span>
+                                <span className="text-muted-foreground">
+                                  ({formatCurrency(loan.amount)})
+                                </span>
+                              </span>
+                            </SelectItem>
+                          );
+                        })
+                      ) : (
+                        <SelectItem value="placeholder" disabled>
+                          <span className="text-muted-foreground">
+                            Nenhum empréstimo disponível
+                          </span>
+                        </SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Selecione o empréstimo que está sendo pago para rastrear o saldo restante
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
