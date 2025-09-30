@@ -2,9 +2,9 @@ import { useState } from "react";
 import { ExpenseForm, Category, Expense } from "@/components/ExpenseForm";
 import { ExpenseList } from "@/components/ExpenseList";
 import { SummaryCards } from "@/components/SummaryCards";
-import { ExpenseCharts } from "@/components/ExpenseCharts";
 import { EditTransactionDialog } from "@/components/EditTransactionDialog";
-import { Wallet, Download, Upload, Trash2 } from "lucide-react";
+import { Wallet, Download, Upload, Trash2, BarChart3 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { useExpensesStorage } from "@/hooks/use-local-storage";
 import { Button } from "@/components/ui/button";
@@ -104,8 +104,15 @@ const Index = () => {
               </div>
             </div>
             
-            {/* Data Management Buttons */}
+            {/* Navigation and Data Management Buttons */}
             <div className="flex items-center gap-2">
+              <Link to="/charts">
+                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4" />
+                  Gráficos
+                </Button>
+              </Link>
+              
               <Button
                 onClick={handleExportExpenses}
                 variant="outline"
@@ -199,7 +206,7 @@ const Index = () => {
 
         <SummaryCards expenses={expenses} />
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <div className="xl:col-span-1">
             <ExpenseForm 
               categories={categories} 
@@ -216,8 +223,6 @@ const Index = () => {
             />
           </div>
         </div>
-
-        <ExpenseCharts expenses={expenses} categories={categories} />
       </div>
 
       {/* Edit Transaction Dialog */}
