@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { Category, Expense } from "./ExpenseForm";
 import { BarChart3, PieChart as PieChartIcon } from "lucide-react";
+import { filterNonFutureExpenses } from "@/lib/utils";
 
 interface ExpenseChartsProps {
   expenses: Expense[];
@@ -9,10 +10,13 @@ interface ExpenseChartsProps {
 }
 
 export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
+  // Filtrar apenas transações do dia atual ou anteriores
+  const currentAndPastExpenses = filterNonFutureExpenses(expenses);
+
   const getCategoryData = () => {
     const categoryTotals: { [key: string]: number } = {};
     
-    expenses.forEach((expense) => {
+    currentAndPastExpenses.forEach((expense) => {
       if (categoryTotals[expense.category]) {
         categoryTotals[expense.category] += expense.amount;
       } else {
@@ -33,7 +37,7 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
   const getMonthlyData = () => {
     const monthlyTotals: { [key: string]: number } = {};
     
-    expenses.forEach((expense) => {
+    currentAndPastExpenses.forEach((expense) => {
       const date = new Date(expense.date + 'T00:00:00');
       const monthKey = date.toLocaleString("pt-BR", { month: "short", year: "numeric" });
       
@@ -66,7 +70,7 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
     }).format(value);
   };
 
-  if (expenses.length === 0) {
+  if (currentAndPastExpenses.length === 0) {
     return (
       <Card className="shadow-lg">
         <CardContent className="pt-6">

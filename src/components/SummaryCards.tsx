@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { TrendingDown, TrendingUp, Wallet, TrendingUp as InvestmentIcon, PiggyBank, CreditCard } from "lucide-react";
 import { Expense } from "./ExpenseForm";
+import { filterNonFutureExpenses } from "@/lib/utils";
 
 interface SummaryCardsProps {
   expenses: Expense[];
@@ -14,28 +15,31 @@ export const SummaryCards = ({ expenses }: SummaryCardsProps) => {
     }).format(value);
   };
 
-  const totalIncome = expenses
+  // Filtrar apenas transações do dia atual ou anteriores
+  const currentAndPastExpenses = filterNonFutureExpenses(expenses);
+
+  const totalIncome = currentAndPastExpenses
     .filter((e) => e.type === "income")
     .reduce((sum, expense) => sum + expense.amount, 0);
   
-  const totalExpenses = expenses
+  const totalExpenses = currentAndPastExpenses
     .filter((e) => e.type === "expense")
     .reduce((sum, expense) => sum + expense.amount, 0);
 
-  const totalInvestments = expenses
+  const totalInvestments = currentAndPastExpenses
     .filter((e) => e.type === "investment")
     .reduce((sum, expense) => sum + expense.amount, 0);
 
-  const totalSavings = expenses
+  const totalSavings = currentAndPastExpenses
     .filter((e) => e.type === "savings")
     .reduce((sum, expense) => sum + expense.amount, 0);
 
-  const totalLoans = expenses
+  const totalLoans = currentAndPastExpenses
     .filter((e) => e.type === "loan")
     .reduce((sum, expense) => sum + expense.amount, 0);
 
   // Calculate loan payments
-  const totalLoanPayments = expenses
+  const totalLoanPayments = currentAndPastExpenses
     .filter((e) => e.type === "expense" && e.isLoanPayment)
     .reduce((sum, expense) => sum + expense.amount, 0);
 
@@ -162,7 +166,7 @@ export const SummaryCards = ({ expenses }: SummaryCardsProps) => {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Transferências</p>
                 <p className="text-2xl font-bold text-foreground mt-1">
-                  {expenses.filter((e) => e.type === "transfer").length}
+                  {currentAndPastExpenses.filter((e) => e.type === "transfer").length}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">transações</p>
               </div>
