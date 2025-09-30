@@ -1,4 +1,4 @@
-# 💰 Controle Financeiro - Expense Chart App
+# 💰 Expense Tracker Pro
 
 Uma aplicação moderna e intuitiva para controle de despesas pessoais, construída com React, TypeScript e componentes UI elegantes.
 <img width="1690" height="932" alt="Screenshot 2025-09-30 at 08 30 26" src="https://github.com/user-attachments/assets/7b621b41-ae79-488a-9dd6-34d868eed920" />
@@ -67,8 +67,8 @@ Uma aplicação moderna e intuitiva para controle de despesas pessoais, constru�
 
 1. **Clone o repositório**
 ```bash
-git clone https://github.com/seu-usuario/expense-chart-app.git
-cd expense-chart-app
+git clone https://github.com/seu-usuario/expense-tracker-pro.git
+cd expense-tracker-pro
 ```
 
 2. **Instale as dependências**
@@ -212,7 +212,7 @@ Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalh
 
 Se você encontrar algum problema ou tiver sugestões:
 
-1. Abra uma [issue](https://github.com/seu-usuario/expense-chart-app/issues)
+1. Abra uma [issue](https://github.com/seu-usuario/expense-tracker-pro/issues)
 2. Entre em contato através do email: seu-email@exemplo.com
 
 ---
