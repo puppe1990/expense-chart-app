@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, AreaChart, Area, ComposedChart } from "recharts";
 import { Category, Expense } from "./ExpenseForm";
-import { BarChart3, PieChart as PieChartIcon, TrendingUp, Activity, DollarSign, Calendar } from "lucide-react";
+import { BarChart3, PieChart as PieChartIcon, TrendingUp, Activity, DollarSign, Calendar, Tag } from "lucide-react";
 import { filterNonFutureExpenses } from "@/lib/utils";
 
 interface ExpenseChartsProps {
@@ -166,11 +166,44 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
     }));
   };
 
+  const getTagsData = () => {
+    const tagTotals: { [key: string]: number } = {};
+    
+    currentAndPastExpenses.forEach((expense) => {
+      if (expense.tags && expense.tags.length > 0) {
+        expense.tags.forEach((tag) => {
+          if (tagTotals[tag]) {
+            tagTotals[tag] += expense.amount;
+          } else {
+            tagTotals[tag] = expense.amount;
+          }
+        });
+      }
+    });
+
+    // Gerar cores dinâmicas para cada tag
+    const colors = [
+      "#ef4444", "#f97316", "#f59e0b", "#eab308", "#84cc16", 
+      "#22c55e", "#10b981", "#14b8a6", "#06b6d4", "#0ea5e9",
+      "#3b82f6", "#6366f1", "#8b5cf6", "#a855f7", "#d946ef",
+      "#ec4899", "#f43f5e", "#64748b", "#71717a", "#78716c"
+    ];
+
+    return Object.entries(tagTotals)
+      .map(([tag, total], index) => ({
+        name: tag,
+        value: total,
+        color: colors[index % colors.length]
+      }))
+      .sort((a, b) => b.value - a.value); // Ordenar por valor decrescente
+  };
+
   const categoryData = getCategoryData();
   const monthlyData = getMonthlyData();
   const investmentProfitData = getInvestmentProfitData();
   const weeklyData = getWeeklyData();
   const typeDistributionData = getTypeDistribution();
+  const tagsData = getTagsData();
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -475,6 +508,90 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
           </Card>
         )}
       </div>
+
+      {/* Quarta linha - Gráfico de Tags */}
+      {tagsData.length > 0 && (
+        <div className="grid grid-cols-1 gap-8">
+          <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm hover:shadow-2xl transition-all duration-300">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-800">
+                <div className="p-3 bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl shadow-lg">
+                  <Tag className="h-5 w-5 text-white" />
+                </div>
+                Distribuição por Tags
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Gráfico de Pizza */}
+                <div>
+                  <ResponsiveContainer width="100%" height={350}>
+                    <PieChart>
+                      <Pie
+                        data={tagsData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        outerRadius={100}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {tagsData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                
+                {/* Gráfico de Barras */}
+                <div>
+                  <ResponsiveContainer width="100%" height={350}>
+                    <BarChart data={tagsData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                      <defs>
+                        <linearGradient id="tagsGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#ec4899" />
+                          <stop offset="100%" stopColor="#be185d" />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                      <XAxis 
+                        dataKey="name" 
+                        tick={{ fontSize: 12, fill: '#6b7280' }}
+                        angle={-45}
+                        textAnchor="end"
+                        height={100}
+                      />
+                      <YAxis tick={{ fontSize: 12, fill: '#6b7280' }} />
+                      <Tooltip 
+                        formatter={(value) => [formatCurrency(value as number), 'Total']}
+                        contentStyle={{ 
+                          backgroundColor: 'white', 
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px',
+                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                        }}
+                      />
+                      <Bar 
+                        dataKey="value" 
+                        fill="url(#tagsGradient)" 
+                        radius={[6, 6, 0, 0]}
+                      >
+                        {tagsData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };
