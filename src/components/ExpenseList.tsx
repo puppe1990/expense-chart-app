@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Trash2, Receipt, CreditCard, FileText, Tag, RotateCcw, ArrowRightLeft, Edit, Search, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Trash2, Receipt, CreditCard, FileText, Tag, RotateCcw, ArrowRightLeft, Edit, Search, X, ChevronLeft, ChevronRight, Copy } from "lucide-react";
 import { Category, Expense } from "./ExpenseForm";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -13,11 +13,12 @@ interface ExpenseListProps {
   categories: Category[];
   onDeleteExpense: (id: string) => void;
   onEditExpense: (expense: Expense) => void;
+  onDuplicateExpense: (expense: Expense) => void;
 }
 
 const ITEMS_PER_PAGE = 5;
 
-export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpense }: ExpenseListProps) => {
+export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpense, onDuplicateExpense }: ExpenseListProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -230,6 +231,15 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
                           title="Editar transação"
                         >
                           <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => onDuplicateExpense(expense)}
+                          className="h-10 w-10 rounded-xl hover:bg-blue-500/10 hover:text-blue-500 transition-all duration-300 hover:scale-110"
+                          title="Duplicar transação"
+                        >
+                          <Copy className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"

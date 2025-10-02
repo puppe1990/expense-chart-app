@@ -125,6 +125,16 @@ export function useExpensesStorage() {
     });
   };
 
+  const duplicateExpense = (expense: any) => {
+    const duplicatedExpense = {
+      ...expense,
+      id: Date.now().toString(),
+      description: `${expense.description} (Cópia)`,
+      date: new Date().toISOString().split('T')[0], // Set to today's date
+    };
+    setExpenses((prev: any[]) => [duplicatedExpense, ...prev]);
+  };
+
   return {
     expenses,
     addExpense,
@@ -133,5 +143,6 @@ export function useExpensesStorage() {
     clearExpenses,
     exportExpenses,
     importExpenses,
+    duplicateExpense,
   };
 }

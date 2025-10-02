@@ -11,6 +11,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -38,12 +48,14 @@ const defaultCategories: Category[] = [
 ];
 
 const Index = () => {
-  const { expenses, addExpense, updateExpense, deleteExpense, clearExpenses, exportExpenses, importExpenses } = useExpensesStorage();
+  const { expenses, addExpense, updateExpense, deleteExpense, clearExpenses, exportExpenses, importExpenses, duplicateExpense } = useExpensesStorage();
   const [categories] = useState<Category[]>(defaultCategories);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [fileInputRef, setFileInputRef] = useState<HTMLInputElement | null>(null);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
 
   const handleAddExpense = (expense: Omit<Expense, "id">) => {
     addExpense(expense);
@@ -62,8 +74,30 @@ const Index = () => {
   };
 
   const handleDeleteExpense = (id: string) => {
-    deleteExpense(id);
-    toast.success("Despesa removida com sucesso!");
+    const expense = expenses.find(e => e.id === id);
+    if (expense) {
+      setExpenseToDelete(expense);
+      setIsDeleteDialogOpen(true);
+    }
+  };
+
+  const confirmDeleteExpense = () => {
+    if (expenseToDelete) {
+      deleteExpense(expenseToDelete.id);
+      toast.success("Transação removida com sucesso!");
+      setExpenseToDelete(null);
+      setIsDeleteDialogOpen(false);
+    }
+  };
+
+  const cancelDeleteExpense = () => {
+    setExpenseToDelete(null);
+    setIsDeleteDialogOpen(false);
+  };
+
+  const handleDuplicateExpense = (expense: Expense) => {
+    duplicateExpense(expense);
+    toast.success("Transação duplicada com sucesso!");
   };
 
   const handleClearExpenses = () => {
@@ -221,6 +255,7 @@ const Index = () => {
               categories={categories}
               onDeleteExpense={handleDeleteExpense}
               onEditExpense={handleEditExpense}
+              onDuplicateExpense={handleDuplicateExpense}
             />
           </div>
         </div>
@@ -238,6 +273,36 @@ const Index = () => {
         onSave={handleUpdateExpense}
         existingLoans={expenses.filter(e => e.type === "loan")}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Trash2 className="h-5 w-5 text-destructive" />
+              Confirmar Exclusão
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-base">
+              Tem certeza que deseja excluir a transação <strong>"{expenseToDelete?.description}"</strong>?
+              <br />
+              <span className="text-sm text-muted-foreground mt-2 block">
+                Esta ação não pode ser desfeita.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelDeleteExpense}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDeleteExpense}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Sim, Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
