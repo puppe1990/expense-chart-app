@@ -1,9 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, ChevronLeft, ChevronRight, TrendingDown, TrendingUp, DollarSign } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, TrendingDown, TrendingUp, DollarSign, RefreshCw } from 'lucide-react';
 import { Expense, Category } from './ExpenseForm';
+import { useForceUpdate } from '@/hooks/use-force-update';
 
 interface DailyExpensesProps {
   expenses: Expense[];
@@ -21,6 +22,12 @@ interface DailyExpenseData {
 export const DailyExpenses = ({ expenses, categories }: DailyExpensesProps) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const forceUpdate = useForceUpdate();
+
+  // Forçar atualização quando as despesas mudarem
+  useEffect(() => {
+    forceUpdate();
+  }, [expenses, forceUpdate]);
 
   // Função para formatar data
   const formatDate = (date: Date) => {
@@ -50,6 +57,7 @@ export const DailyExpenses = ({ expenses, categories }: DailyExpensesProps) => {
   const dailyExpenses = useMemo(() => {
     const grouped = expenses.reduce((acc, expense) => {
       const date = expense.date;
+      
       if (!acc[date]) {
         acc[date] = {
           date,
@@ -76,15 +84,48 @@ export const DailyExpenses = ({ expenses, categories }: DailyExpensesProps) => {
     return Object.values(grouped).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [expenses]);
 
-  // Filtrar despesas do mês atual
+  // Filtrar despesas do mês atual e criar dias vazios
   const currentMonthExpenses = useMemo(() => {
-    const currentMonth = currentDate.getMonth();
+    const currentMonth = currentDate.getMonth() + 1; // +1 porque getMonth() retorna 0-11
     const currentYear = currentDate.getFullYear();
     
-    return dailyExpenses.filter(day => {
-      const dayDate = new Date(day.date);
-      return dayDate.getMonth() === currentMonth && dayDate.getFullYear() === currentYear;
+    // Criar string de referência do mês (YYYY-MM)
+    const monthString = `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
+    
+    // Filtrar despesas do mês atual usando comparação de string
+    const monthExpenses = dailyExpenses.filter(day => {
+      return day.date.startsWith(monthString);
     });
+
+    // Criar um mapa de despesas por data para facilitar a busca
+    const expensesByDate = monthExpenses.reduce((acc, day) => {
+      acc[day.date] = day;
+      return acc;
+    }, {} as Record<string, DailyExpenseData>);
+
+    // Gerar todos os dias do mês
+    const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+    const allDays: DailyExpenseData[] = [];
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateString = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      
+      if (expensesByDate[dateString]) {
+        allDays.push(expensesByDate[dateString]);
+      } else {
+        // Criar um dia vazio
+        allDays.push({
+          date: dateString,
+          totalIncome: 0,
+          totalExpense: 0,
+          netAmount: 0,
+          transactions: []
+        });
+      }
+    }
+
+    // Ordenar por data (mais recente primeiro)
+    return allDays.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [dailyExpenses, currentDate]);
 
   // Navegar para o mês anterior
@@ -153,6 +194,14 @@ export const DailyExpenses = ({ expenses, categories }: DailyExpensesProps) => {
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={forceUpdate}
+                className="ml-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </CardHeader>
@@ -214,83 +263,96 @@ export const DailyExpenses = ({ expenses, categories }: DailyExpensesProps) => {
             </CardContent>
           </Card>
         ) : (
-          currentMonthExpenses.map((day) => (
-            <Card 
-              key={day.date} 
-              className={`cursor-pointer transition-all duration-200 hover:shadow-md ${
-                selectedDate === day.date ? 'ring-2 ring-primary' : ''
-              }`}
-              onClick={() => setSelectedDate(selectedDate === day.date ? null : day.date)}
-            >
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg">
-                      {formatDisplayDate(day.date)}
-                    </CardTitle>
-                    <p className="text-sm text-gray-500">
-                      {day.transactions.length} transação{day.transactions.length !== 1 ? 'ões' : ''}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <div className={`text-lg font-semibold ${
-                      day.netAmount >= 0 ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {formatCurrency(day.netAmount)}
+          currentMonthExpenses.map((day) => {
+            const hasTransactions = day.transactions.length > 0;
+            
+            return (
+              <Card 
+                key={day.date} 
+                className={`transition-all duration-200 ${
+                  hasTransactions 
+                    ? `cursor-pointer hover:shadow-md ${selectedDate === day.date ? 'ring-2 ring-primary' : ''}` 
+                    : 'opacity-60'
+                }`}
+                onClick={() => hasTransactions && setSelectedDate(selectedDate === day.date ? null : day.date)}
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className={`text-lg ${!hasTransactions ? 'text-gray-400' : ''}`}>
+                        {formatDisplayDate(day.date)}
+                      </CardTitle>
+                      <p className={`text-sm ${!hasTransactions ? 'text-gray-400' : 'text-gray-500'}`}>
+                        {hasTransactions 
+                          ? `${day.transactions.length} transação${day.transactions.length !== 1 ? 'ões' : ''}`
+                          : 'Nenhuma transação'
+                        }
+                      </p>
                     </div>
-                    <div className="text-sm text-gray-500">
-                      {formatCurrency(day.totalIncome)} - {formatCurrency(day.totalExpense)}
+                    <div className="text-right">
+                      <div className={`text-lg font-semibold ${
+                        !hasTransactions 
+                          ? 'text-gray-400' 
+                          : day.netAmount >= 0 ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {hasTransactions ? formatCurrency(day.netAmount) : 'R$ 0,00'}
+                      </div>
+                      {hasTransactions && (
+                        <div className="text-sm text-gray-500">
+                          {formatCurrency(day.totalIncome)} - {formatCurrency(day.totalExpense)}
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
-              </CardHeader>
-              
-              {selectedDate === day.date && (
-                <CardContent className="pt-0">
-                  <div className="space-y-3">
-                    {day.transactions.map((transaction) => {
-                      const category = getCategoryById(transaction.category);
-                      return (
-                        <div 
-                          key={transaction.id}
-                          className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div 
-                              className="w-3 h-3 rounded-full"
-                              style={{ backgroundColor: category?.color || '#64748b' }}
-                            />
-                            <div>
-                              <div className="font-medium">{transaction.description}</div>
-                              <div className="text-sm text-gray-500 flex items-center gap-2">
-                                <span>{category?.icon} {category?.name}</span>
-                                <Badge variant="outline" className="text-xs">
-                                  {transaction.type === 'income' ? 'Entrada' :
-                                   transaction.type === 'expense' ? 'Despesa' :
-                                   transaction.type === 'transfer' ? 'Transferência' :
-                                   transaction.type === 'investment' ? 'Investimento' :
-                                   transaction.type === 'investment_profit' ? 'Lucro' :
-                                   transaction.type === 'loan' ? 'Empréstimo' : 'Outro'}
-                                </Badge>
+                </CardHeader>
+                
+                {hasTransactions && selectedDate === day.date && (
+                  <CardContent className="pt-0">
+                    <div className="space-y-3">
+                      {day.transactions.map((transaction) => {
+                        const category = getCategoryById(transaction.category);
+                        return (
+                          <div 
+                            key={transaction.id}
+                            className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div 
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: category?.color || '#64748b' }}
+                              />
+                              <div>
+                                <div className="font-medium">{transaction.description}</div>
+                                <div className="text-sm text-gray-500 flex items-center gap-2">
+                                  <span>{category?.icon} {category?.name}</span>
+                                  <Badge variant="outline" className="text-xs">
+                                    {transaction.type === 'income' ? 'Entrada' :
+                                     transaction.type === 'expense' ? 'Despesa' :
+                                     transaction.type === 'transfer' ? 'Transferência' :
+                                     transaction.type === 'investment' ? 'Investimento' :
+                                     transaction.type === 'investment_profit' ? 'Lucro' :
+                                     transaction.type === 'loan' ? 'Empréstimo' : 'Outro'}
+                                  </Badge>
+                                </div>
                               </div>
                             </div>
+                            <div className={`font-semibold ${
+                              transaction.type === 'income' || transaction.type === 'investment_profit'
+                                ? 'text-green-600' 
+                                : 'text-red-600'
+                            }`}>
+                              {transaction.type === 'income' || transaction.type === 'investment_profit' ? '+' : '-'}
+                              {formatCurrency(transaction.amount)}
+                            </div>
                           </div>
-                          <div className={`font-semibold ${
-                            transaction.type === 'income' || transaction.type === 'investment_profit'
-                              ? 'text-green-600' 
-                              : 'text-red-600'
-                          }`}>
-                            {transaction.type === 'income' || transaction.type === 'investment_profit' ? '+' : '-'}
-                            {formatCurrency(transaction.amount)}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              )}
-            </Card>
-          ))
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                )}
+              </Card>
+            );
+          })
         )}
       </div>
     </div>

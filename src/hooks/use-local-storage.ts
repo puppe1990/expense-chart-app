@@ -72,7 +72,13 @@ export function useExpensesStorage() {
       ...expense,
       id: Date.now().toString(),
     };
-    setExpenses((prev: any[]) => [newExpense, ...prev]);
+    setExpenses((prev: any[]) => {
+      // Sempre criar um novo array para garantir que o React detecte a mudança
+      const newArray = [newExpense, ...(prev || [])];
+      console.log('🔄 Adicionando despesa:', newExpense);
+      console.log('📊 Nova lista de despesas:', newArray);
+      return newArray;
+    });
   };
 
   const updateExpense = (id: string, updatedExpense: any) => {
