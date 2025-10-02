@@ -3,7 +3,7 @@ import { ExpenseForm, Category, Expense } from "@/components/ExpenseForm";
 import { ExpenseList } from "@/components/ExpenseList";
 import { SummaryCards } from "@/components/SummaryCards";
 import { EditTransactionDialog } from "@/components/EditTransactionDialog";
-import { Wallet, Download, Upload, Trash2, BarChart3 } from "lucide-react";
+import { Wallet, Download, Upload, Trash2, BarChart3, Calendar } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { useExpensesStorage } from "@/hooks/use-local-storage";
@@ -145,6 +145,13 @@ const Index = () => {
                 <Button variant="outline" size="sm" className="flex items-center gap-2">
                   <BarChart3 className="h-4 w-4" />
                   Gráficos
+                </Button>
+              </Link>
+              
+              <Link to="/daily">
+                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Diário
                 </Button>
               </Link>
               
