@@ -2,7 +2,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Trash2, Receipt, CreditCard, FileText, Tag, RotateCcw, ArrowRightLeft, Edit, Search, X, ChevronLeft, ChevronRight, Copy } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Trash2, Receipt, CreditCard, FileText, Tag, RotateCcw, ArrowRightLeft, Edit, Search, X, ChevronLeft, ChevronRight, Copy, Filter, Calendar } from "lucide-react";
 import { Category, Expense } from "./ExpenseForm";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -21,6 +23,16 @@ const ITEMS_PER_PAGE = 5;
 export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpense, onDuplicateExpense }: ExpenseListProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  
+  // Filter states
+  const [filters, setFilters] = useState({
+    transactionType: "all",
+    category: "all",
+    paymentMethod: "all",
+    dateFrom: "",
+    dateTo: "",
+    showRecurring: "all"
+  });
 
   const getCategoryInfo = (categoryId: string) => {
     return categories.find((cat) => cat.id === categoryId);
@@ -68,34 +80,89 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
     return colors[type] || "text-gray-600 dark:text-gray-400";
   };
 
-  // Filter expenses based on search query
+  // Filter expenses based on search query and filters
   const filteredExpenses = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return expenses;
-    }
-
-    const query = searchQuery.toLowerCase().trim();
     return expenses.filter((expense) => {
       const category = getCategoryInfo(expense.category);
       const categoryName = category?.name?.toLowerCase() || "";
+      const expenseDate = new Date(expense.date + 'T00:00:00');
       
-      return (
-        expense.description.toLowerCase().includes(query) ||
-        categoryName.includes(query) ||
-        expense.notes?.toLowerCase().includes(query) ||
-        expense.tags?.some(tag => tag.toLowerCase().includes(query)) ||
-        expense.fromAccount?.toLowerCase().includes(query) ||
-        expense.toAccount?.toLowerCase().includes(query) ||
-        format(new Date(expense.date + 'T00:00:00'), "dd MMM yyyy", { locale: ptBR }).toLowerCase().includes(query)
-      );
+      // Search query filter
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase().trim();
+        const matchesSearch = (
+          expense.description.toLowerCase().includes(query) ||
+          categoryName.includes(query) ||
+          expense.notes?.toLowerCase().includes(query) ||
+          expense.tags?.some(tag => tag.toLowerCase().includes(query)) ||
+          expense.fromAccount?.toLowerCase().includes(query) ||
+          expense.toAccount?.toLowerCase().includes(query) ||
+          format(expenseDate, "dd MMM yyyy", { locale: ptBR }).toLowerCase().includes(query)
+        );
+        if (!matchesSearch) return false;
+      }
+      
+      // Transaction type filter
+      if (filters.transactionType !== "all" && expense.type !== filters.transactionType) {
+        return false;
+      }
+      
+      // Category filter
+      if (filters.category !== "all" && expense.category !== filters.category) {
+        return false;
+      }
+      
+      // Payment method filter
+      if (filters.paymentMethod !== "all" && expense.paymentMethod !== filters.paymentMethod) {
+        return false;
+      }
+      
+      // Date range filter
+      if (filters.dateFrom) {
+        const fromDate = new Date(filters.dateFrom + 'T00:00:00');
+        if (expenseDate < fromDate) return false;
+      }
+      
+      if (filters.dateTo) {
+        const toDate = new Date(filters.dateTo + 'T23:59:59');
+        if (expenseDate > toDate) return false;
+      }
+      
+      // Recurring filter
+      if (filters.showRecurring === "only" && !expense.isRecurring) {
+        return false;
+      } else if (filters.showRecurring === "exclude" && expense.isRecurring) {
+        return false;
+      }
+      
+      return true;
     });
-  }, [expenses, searchQuery, categories]);
+  }, [expenses, searchQuery, filters, categories]);
 
   // Pagination logic
   const totalPages = Math.ceil(filteredExpenses.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIndex = startIndex + ITEMS_PER_PAGE;
   const paginatedExpenses = filteredExpenses.slice(startIndex, endIndex);
+
+  // Filter update functions
+  const updateFilter = (key: string, value: string) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+    setCurrentPage(1);
+  };
+
+  const clearAllFilters = () => {
+    setSearchQuery("");
+    setFilters({
+      transactionType: "all",
+      category: "all",
+      paymentMethod: "all",
+      dateFrom: "",
+      dateTo: "",
+      showRecurring: "all"
+    });
+    setCurrentPage(1);
+  };
 
   // Reset to first page when search query changes
   const handleSearchChange = (value: string) => {
@@ -105,6 +172,17 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
 
   const goToPage = (page: number) => {
     setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+  };
+
+  // Check if any filters are active
+  const hasActiveFilters = () => {
+    return searchQuery.trim() !== "" ||
+           filters.transactionType !== "all" ||
+           filters.category !== "all" ||
+           filters.paymentMethod !== "all" ||
+           filters.dateFrom !== "" ||
+           filters.dateTo !== "" ||
+           filters.showRecurring !== "all";
   };
 
   return (
@@ -119,14 +197,27 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
               <Receipt className="h-5 w-5 text-white" />
             </div>
             Transações Recentes
-            {searchQuery && (
+            {hasActiveFilters() && (
               <span className="text-sm font-normal text-muted-foreground ml-2">
                 ({filteredExpenses.length} de {expenses.length})
               </span>
             )}
           </CardTitle>
+          {hasActiveFilters() && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearAllFilters}
+              className="text-xs"
+            >
+              <X className="h-3 w-3 mr-1" />
+              Limpar Filtros
+            </Button>
+          )}
         </div>
-        <div className="relative">
+        
+        {/* Search Bar */}
+        <div className="relative mb-4">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Buscar transações..."
@@ -144,6 +235,108 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
               <X className="h-4 w-4" />
             </Button>
           )}
+        </div>
+
+        {/* Filters */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+          {/* Transaction Type Filter */}
+          <div className="space-y-1">
+            <Label className="text-xs font-medium text-muted-foreground">Tipo</Label>
+            <Select value={filters.transactionType} onValueChange={(value) => updateFilter("transactionType", value)}>
+              <SelectTrigger className="h-9 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="income">💰 Entrada</SelectItem>
+                <SelectItem value="expense">💸 Despesa</SelectItem>
+                <SelectItem value="transfer">🔄 Transferência</SelectItem>
+                <SelectItem value="investment">📈 Investimento</SelectItem>
+                <SelectItem value="loan">🏦 Empréstimo</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Category Filter */}
+          <div className="space-y-1">
+            <Label className="text-xs font-medium text-muted-foreground">Categoria</Label>
+            <Select value={filters.category} onValueChange={(value) => updateFilter("category", value)}>
+              <SelectTrigger className="h-9 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                {categories.map((category) => (
+                  <SelectItem key={category.id} value={category.id}>
+                    {category.icon} {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Payment Method Filter */}
+          <div className="space-y-1">
+            <Label className="text-xs font-medium text-muted-foreground">Pagamento</Label>
+            <Select value={filters.paymentMethod} onValueChange={(value) => updateFilter("paymentMethod", value)}>
+              <SelectTrigger className="h-9 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="cash">💵 Dinheiro</SelectItem>
+                <SelectItem value="card">💳 Cartão</SelectItem>
+                <SelectItem value="bank_transfer">🏦 Transferência</SelectItem>
+                <SelectItem value="pix">⚡ PIX</SelectItem>
+                <SelectItem value="digital_wallet">📱 Carteira Digital</SelectItem>
+                <SelectItem value="check">📝 Cheque</SelectItem>
+                <SelectItem value="other">🔧 Outro</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Date From Filter */}
+          <div className="space-y-1">
+            <Label className="text-xs font-medium text-muted-foreground">Data Inicial</Label>
+            <div className="relative">
+              <Calendar className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+              <Input
+                type="date"
+                value={filters.dateFrom}
+                onChange={(e) => updateFilter("dateFrom", e.target.value)}
+                className="h-9 pl-8 text-xs bg-white/50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700"
+              />
+            </div>
+          </div>
+
+          {/* Date To Filter */}
+          <div className="space-y-1">
+            <Label className="text-xs font-medium text-muted-foreground">Data Final</Label>
+            <div className="relative">
+              <Calendar className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+              <Input
+                type="date"
+                value={filters.dateTo}
+                onChange={(e) => updateFilter("dateTo", e.target.value)}
+                className="h-9 pl-8 text-xs bg-white/50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700"
+              />
+            </div>
+          </div>
+
+          {/* Recurring Filter */}
+          <div className="space-y-1">
+            <Label className="text-xs font-medium text-muted-foreground">Recorrente</Label>
+            <Select value={filters.showRecurring} onValueChange={(value) => updateFilter("showRecurring", value)}>
+              <SelectTrigger className="h-9 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="only">Apenas Recorrentes</SelectItem>
+                <SelectItem value="exclude">Excluir Recorrentes</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="relative">
