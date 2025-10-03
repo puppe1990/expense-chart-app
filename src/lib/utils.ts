@@ -18,6 +18,51 @@ export function isFutureDate(dateString: string): boolean {
 }
 
 /**
+ * Formata uma data para o formato YYYY-MM-DD sem problemas de fuso horário
+ * @param date - Data a ser formatada
+ * @returns String no formato YYYY-MM-DD
+ */
+export function formatDateToISO(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Obtém a data atual no formato YYYY-MM-DD sem problemas de fuso horário
+ * @returns String no formato YYYY-MM-DD
+ */
+export function getCurrentDateString(): string {
+  return formatDateToISO(new Date());
+}
+
+/**
+ * Converte uma string de data YYYY-MM-DD para um objeto Date sem problemas de fuso horário
+ * @param dateString - String no formato YYYY-MM-DD
+ * @returns Objeto Date
+ */
+export function parseDateString(dateString: string): Date {
+  const [year, month, day] = dateString.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+/**
+ * Formata uma string de data YYYY-MM-DD para exibição em português brasileiro
+ * @param dateString - String no formato YYYY-MM-DD
+ * @returns String formatada para exibição
+ */
+export function formatDateStringForDisplay(dateString: string): string {
+  const date = parseDateString(dateString);
+  return date.toLocaleDateString('pt-BR', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+}
+
+/**
  * Filtra transações para incluir apenas as do dia atual ou anteriores
  * @param expenses - Array de despesas
  * @returns Array filtrado de despesas

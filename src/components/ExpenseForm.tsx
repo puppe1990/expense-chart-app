@@ -14,6 +14,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlusCircle, Calendar, CreditCard, FileText, Tag, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
+import { getCurrentDateString } from "@/lib/utils";
 
 export interface Category {
   id: string;
@@ -53,7 +54,7 @@ export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [] }: Ex
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(getCurrentDateString());
   const [type, setType] = useState<Expense["type"]>("expense");
   const [paymentMethod, setPaymentMethod] = useState<Expense["paymentMethod"]>("cash");
   const [notes, setNotes] = useState("");
@@ -110,7 +111,7 @@ export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [] }: Ex
     setDescription("");
     setAmount("");
     setCategory("");
-    setDate(new Date().toISOString().split("T")[0]);
+    setDate(getCurrentDateString());
     setType("expense");
     setPaymentMethod("cash");
     setNotes("");

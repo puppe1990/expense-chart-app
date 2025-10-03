@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getCurrentDateString } from '@/lib/utils';
 
 /**
  * Custom hook for managing local storage with TypeScript support
@@ -103,7 +104,7 @@ export function useExpensesStorage() {
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `expenses-${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `expenses-${getCurrentDateString()}.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -136,7 +137,7 @@ export function useExpensesStorage() {
       ...expense,
       id: Date.now().toString(),
       description: `${expense.description} (Cópia)`,
-      date: new Date().toISOString().split('T')[0], // Set to today's date
+      date: getCurrentDateString(), // Set to today's date
     };
     setExpenses((prev: any[]) => [duplicatedExpense, ...prev]);
   };

@@ -9,6 +9,7 @@ import { Category, Expense } from "./ExpenseForm";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useState, useMemo } from "react";
+import { parseDateString } from "@/lib/utils";
 
 interface ExpenseListProps {
   expenses: Expense[];
@@ -85,7 +86,7 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
     return expenses.filter((expense) => {
       const category = getCategoryInfo(expense.category);
       const categoryName = category?.name?.toLowerCase() || "";
-      const expenseDate = new Date(expense.date + 'T00:00:00');
+      const expenseDate = parseDateString(expense.date);
       
       // Search query filter
       if (searchQuery.trim()) {
@@ -119,12 +120,13 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
       
       // Date range filter
       if (filters.dateFrom) {
-        const fromDate = new Date(filters.dateFrom + 'T00:00:00');
+        const fromDate = parseDateString(filters.dateFrom);
         if (expenseDate < fromDate) return false;
       }
       
       if (filters.dateTo) {
-        const toDate = new Date(filters.dateTo + 'T23:59:59');
+        const toDate = parseDateString(filters.dateTo);
+        toDate.setHours(23, 59, 59, 999);
         if (expenseDate > toDate) return false;
       }
       

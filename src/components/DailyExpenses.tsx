@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar, ChevronLeft, ChevronRight, TrendingDown, TrendingUp, DollarSign, RefreshCw } from 'lucide-react';
 import { Expense, Category } from './ExpenseForm';
 import { useForceUpdate } from '@/hooks/use-force-update';
+import { formatDateToISO, formatDateStringForDisplay, parseDateString } from '@/lib/utils';
 
 interface DailyExpensesProps {
   expenses: Expense[];
@@ -31,18 +32,12 @@ export const DailyExpenses = ({ expenses, categories }: DailyExpensesProps) => {
 
   // Função para formatar data
   const formatDate = (date: Date) => {
-    return date.toISOString().split('T')[0];
+    return formatDateToISO(date);
   };
 
   // Função para formatar data para exibição
   const formatDisplayDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+    return formatDateStringForDisplay(dateString);
   };
 
   // Função para formatar moeda
@@ -81,7 +76,7 @@ export const DailyExpenses = ({ expenses, categories }: DailyExpensesProps) => {
       return acc;
     }, {} as Record<string, DailyExpenseData>);
 
-    return Object.values(grouped).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return Object.values(grouped).sort((a, b) => parseDateString(b.date).getTime() - parseDateString(a.date).getTime());
   }, [expenses]);
 
   // Filtrar despesas do mês atual e criar dias vazios
@@ -125,7 +120,7 @@ export const DailyExpenses = ({ expenses, categories }: DailyExpensesProps) => {
     }
 
     // Ordenar por data (mais recente primeiro)
-    return allDays.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return allDays.sort((a, b) => parseDateString(b.date).getTime() - parseDateString(a.date).getTime());
   }, [dailyExpenses, currentDate]);
 
   // Navegar para o mês anterior

@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, AreaChart, Area, ComposedChart } from "recharts";
 import { Category, Expense } from "./ExpenseForm";
 import { BarChart3, PieChart as PieChartIcon, TrendingUp, Activity, DollarSign, Calendar, Tag } from "lucide-react";
-import { filterNonFutureExpenses } from "@/lib/utils";
+import { filterNonFutureExpenses, parseDateString } from "@/lib/utils";
 
 interface ExpenseChartsProps {
   expenses: Expense[];
@@ -38,7 +38,7 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
     const monthlyData: { [key: string]: { income: number; expense: number; investment: number; profit: number; net: number } } = {};
     
     currentAndPastExpenses.forEach((expense) => {
-      const date = new Date(expense.date + 'T00:00:00');
+      const date = parseDateString(expense.date);
       const monthKey = date.toLocaleString("pt-BR", { month: "short", year: "numeric" });
       
       if (!monthlyData[monthKey]) {
@@ -110,7 +110,7 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
     const weeklyTotals: { [key: string]: { income: number; expense: number; net: number } } = {};
     
     currentAndPastExpenses.forEach((expense) => {
-      const date = new Date(expense.date + 'T00:00:00');
+      const date = parseDateString(expense.date);
       const weekStart = new Date(date);
       weekStart.setDate(date.getDate() - date.getDay());
       const weekKey = weekStart.toLocaleDateString("pt-BR", { month: "short", day: "numeric" });
