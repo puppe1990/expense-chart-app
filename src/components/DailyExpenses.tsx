@@ -2,10 +2,17 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, ChevronLeft, ChevronRight, TrendingDown, TrendingUp, DollarSign, RefreshCw, Download } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Calendar, ChevronLeft, ChevronRight, TrendingDown, TrendingUp, DollarSign, RefreshCw, Download, FileSpreadsheet } from 'lucide-react';
 import { Expense, Category } from './ExpenseForm';
 import { useForceUpdate } from '@/hooks/use-force-update';
 import { formatDateToISO, formatDateStringForDisplay, parseDateString } from '@/lib/utils';
+import * as XLSX from 'xlsx';
 
 interface DailyExpensesProps {
   expenses: Expense[];
@@ -230,6 +237,86 @@ export const DailyExpenses = ({ expenses, categories }: DailyExpensesProps) => {
     document.body.removeChild(link);
   };
 
+  // Função para exportar dados para Excel
+  const exportToExcel = () => {
+    const excelData = currentMonthExpenses
+      .filter(day => day.transactions.length > 0) // Apenas dias com transações
+      .map(day => {
+        const dayData = [
+          // Cabeçalho para o dia
+          {
+            'Data': formatDisplayDate(day.date),
+            'Tipo': 'RESUMO DO DIA',
+            'Descrição': `Total do dia: ${day.transactions.length} transação${day.transactions.length !== 1 ? 'ões' : ''}`,
+            'Valor': '',
+            'Categoria': '',
+            'Método de Pagamento': '',
+            'Entradas': day.totalIncome > 0 ? day.totalIncome : '',
+            'Saídas': day.totalExpense > 0 ? day.totalExpense : '',
+            'Saldo': day.netAmount,
+            'Observações': ''
+          }
+        ];
+
+        // Adicionar cada transação do dia
+        const transactionsData = day.transactions.map(transaction => {
+          const category = getCategoryById(transaction.category);
+          return {
+            'Data': formatDisplayDate(day.date),
+            'Tipo': transaction.type === 'income' ? 'Entrada' :
+                   transaction.type === 'expense' ? 'Despesa' :
+                   transaction.type === 'transfer' ? 'Transferência' :
+                   transaction.type === 'investment' ? 'Investimento' :
+                   transaction.type === 'investment_profit' ? 'Lucro' :
+                   transaction.type === 'loan' ? 'Empréstimo' : 'Outro',
+            'Descrição': transaction.description,
+            'Valor': transaction.amount,
+            'Categoria': category?.name || 'Não definida',
+            'Método de Pagamento': transaction.paymentMethod || 'Não informado',
+            'Entradas': transaction.type === 'income' || transaction.type === 'investment_profit' ? transaction.amount : '',
+            'Saídas': transaction.type !== 'income' && transaction.type !== 'investment_profit' ? transaction.amount : '',
+            'Saldo': '',
+            'Observações': transaction.notes || ''
+          };
+        });
+
+        return [...dayData, ...transactionsData];
+      })
+      .flat();
+
+    // Criar workbook e worksheet
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+    // Definir larguras das colunas
+    const columnWidths = [
+      { wch: 15 }, // Data
+      { wch: 15 }, // Tipo
+      { wch: 30 }, // Descrição
+      { wch: 12 }, // Valor
+      { wch: 20 }, // Categoria
+      { wch: 20 }, // Método de Pagamento
+      { wch: 12 }, // Entradas
+      { wch: 12 }, // Saídas
+      { wch: 12 }, // Saldo
+      { wch: 30 }  // Observações
+    ];
+    worksheet['!cols'] = columnWidths;
+
+    // Adicionar worksheet ao workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Gastos Diários');
+
+    // Gerar nome do arquivo
+    const monthName = currentDate.toLocaleDateString('pt-BR', { 
+      month: 'long', 
+      year: 'numeric' 
+    });
+    const fileName = `gastos-diarios-${monthName.replace(' ', '-').toLowerCase()}.xlsx`;
+
+    // Baixar arquivo
+    XLSX.writeFile(workbook, fileName);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header com navegação do mês */}
@@ -269,15 +356,28 @@ export const DailyExpenses = ({ expenses, categories }: DailyExpensesProps) => {
               >
                 <RefreshCw className="h-4 w-4" />
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={exportToCSV}
-                className="ml-2"
-                title="Exportar para CSV"
-              >
-                <Download className="h-4 w-4" />
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="ml-2"
+                    title="Exportar dados"
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={exportToCSV}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Exportar para CSV
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={exportToExcel}>
+                    <FileSpreadsheet className="h-4 w-4 mr-2" />
+                    Exportar para Excel
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </CardHeader>
