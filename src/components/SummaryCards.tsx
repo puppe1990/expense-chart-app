@@ -49,7 +49,8 @@ export const SummaryCards = ({ expenses }: SummaryCardsProps) => {
 
   // Transfers don't affect the balance as they're just moving money between accounts
   // Investment profits are considered income for balance calculation
-  const balance = totalIncome + totalInvestmentProfits - totalExpenses;
+  // Investments should be subtracted from balance as they represent money leaving the account
+  const balance = totalIncome + totalInvestmentProfits - totalExpenses - totalInvestments;
 
   return (
     <div className="space-y-6 mb-8">
