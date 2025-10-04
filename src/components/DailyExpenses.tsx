@@ -8,11 +8,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Calendar, ChevronLeft, ChevronRight, TrendingDown, TrendingUp, DollarSign, RefreshCw, Download, FileSpreadsheet } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, TrendingDown, TrendingUp, DollarSign, RefreshCw, Download, FileSpreadsheet, FileText } from 'lucide-react';
 import { Expense, Category } from './ExpenseForm';
 import { useForceUpdate } from '@/hooks/use-force-update';
 import { formatDateToISO, formatDateStringForDisplay, parseDateString } from '@/lib/utils';
 import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface DailyExpensesProps {
   expenses: Expense[];
@@ -317,6 +319,179 @@ export const DailyExpenses = ({ expenses, categories }: DailyExpensesProps) => {
     XLSX.writeFile(workbook, fileName);
   };
 
+  // Função para exportar dados para PDF
+  const exportToPDF = () => {
+    try {
+      // Verificar se há dados para exportar
+      const hasData = currentMonthExpenses.some(day => day.transactions.length > 0);
+      if (!hasData) {
+        alert('Não há dados para exportar neste mês.');
+        return;
+      }
+
+      console.log('Iniciando geração de PDF...');
+      const pdf = new jsPDF('l', 'mm', 'a4'); // Landscape orientation
+    
+    // Configurar fonte
+    pdf.setFont('helvetica');
+    
+    // Título do relatório
+    const monthName = currentDate.toLocaleDateString('pt-BR', { 
+      month: 'long', 
+      year: 'numeric' 
+    });
+    
+    pdf.setFontSize(16);
+    pdf.text('Relatório de Gastos Diários', 20, 20);
+    pdf.setFontSize(12);
+    pdf.text(`Período: ${monthName}`, 20, 30);
+    
+    // Resumo do mês
+    pdf.setFontSize(10);
+    pdf.text('Resumo do Mês:', 20, 45);
+    pdf.text(`Entradas: R$ ${monthTotals.totalIncome.toFixed(2).replace('.', ',')}`, 20, 52);
+    pdf.text(`Saídas: R$ ${monthTotals.totalExpense.toFixed(2).replace('.', ',')}`, 20, 59);
+    pdf.text(`Saldo: R$ ${monthTotals.netAmount.toFixed(2).replace('.', ',')}`, 20, 66);
+    
+    // Preparar dados para a tabela
+    const tableData = currentMonthExpenses
+      .filter(day => day.transactions.length > 0)
+      .flatMap(day => {
+        const daySummary = [
+          [
+            formatDisplayDate(day.date),
+            'RESUMO DO DIA',
+            `Total: ${day.transactions.length} transação${day.transactions.length !== 1 ? 'ões' : ''}`,
+            '',
+            '',
+            day.totalIncome > 0 ? `R$ ${day.totalIncome.toFixed(2).replace('.', ',')}` : '',
+            day.totalExpense > 0 ? `R$ ${day.totalExpense.toFixed(2).replace('.', ',')}` : '',
+            `R$ ${day.netAmount.toFixed(2).replace('.', ',')}`,
+            ''
+          ]
+        ];
+        
+        const transactionsData = day.transactions.map(transaction => {
+          const category = getCategoryById(transaction.category);
+          const typeLabel = transaction.type === 'income' ? 'Entrada' :
+                           transaction.type === 'expense' ? 'Despesa' :
+                           transaction.type === 'transfer' ? 'Transferência' :
+                           transaction.type === 'investment' ? 'Investimento' :
+                           transaction.type === 'investment_profit' ? 'Lucro' :
+                           transaction.type === 'loan' ? 'Empréstimo' : 'Outro';
+          
+          return [
+            formatDisplayDate(day.date),
+            typeLabel,
+            transaction.description || '',
+            `R$ ${transaction.amount.toFixed(2).replace('.', ',')}`,
+            category?.name || 'Não definida',
+            transaction.type === 'income' || transaction.type === 'investment_profit' ? `R$ ${transaction.amount.toFixed(2).replace('.', ',')}` : '',
+            transaction.type !== 'income' && transaction.type !== 'investment_profit' ? `R$ ${transaction.amount.toFixed(2).replace('.', ',')}` : '',
+            '',
+            transaction.notes || ''
+          ];
+        });
+        
+        return [...daySummary, ...transactionsData];
+      });
+    
+    // Cabeçalhos da tabela
+    const headers = ['Data', 'Tipo', 'Descrição', 'Valor', 'Categoria', 'Entradas', 'Saídas', 'Saldo', 'Observações'];
+    
+    // Configurar a tabela
+    const tableConfig = {
+      head: [headers],
+      body: tableData,
+      startY: 80,
+      styles: {
+        fontSize: 8,
+        cellPadding: 2,
+      },
+      headStyles: {
+        fillColor: [71, 85, 105],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+      },
+      alternateRowStyles: {
+        fillColor: [248, 250, 252],
+      },
+      columnStyles: {
+        0: { cellWidth: 25 },
+        1: { cellWidth: 20 },
+        2: { cellWidth: 40 },
+        3: { cellWidth: 20 },
+        4: { cellWidth: 25 },
+        5: { cellWidth: 20 },
+        6: { cellWidth: 20 },
+        7: { cellWidth: 20 },
+        8: { cellWidth: 35 },
+      },
+      margin: { left: 20, right: 20 },
+    };
+    
+    // Adicionar a tabela ao PDF
+    try {
+      autoTable(pdf, tableConfig);
+    } catch (tableError) {
+      console.error('Erro ao criar tabela:', tableError);
+      // Fallback: criar uma versão simplificada sem autoTable
+      pdf.setFontSize(10);
+      pdf.text('Dados das transações:', 20, 80);
+      
+      let yPosition = 90;
+      currentMonthExpenses
+        .filter(day => day.transactions.length > 0)
+        .forEach(day => {
+          pdf.setFontSize(12);
+          pdf.text(`${formatDisplayDate(day.date)} - Total: R$ ${day.netAmount.toFixed(2).replace('.', ',')}`, 20, yPosition);
+          yPosition += 10;
+          
+          pdf.setFontSize(9);
+          day.transactions.forEach(transaction => {
+            const category = getCategoryById(transaction.category);
+            const typeLabel = transaction.type === 'income' ? 'Entrada' :
+                             transaction.type === 'expense' ? 'Despesa' :
+                             transaction.type === 'transfer' ? 'Transferência' :
+                             transaction.type === 'investment' ? 'Investimento' :
+                             transaction.type === 'investment_profit' ? 'Lucro' :
+                             transaction.type === 'loan' ? 'Empréstimo' : 'Outro';
+            
+            pdf.text(`  • ${typeLabel}: ${transaction.description} - R$ ${transaction.amount.toFixed(2).replace('.', ',')} (${category?.name || 'Não definida'})`, 25, yPosition);
+            yPosition += 7;
+            
+            if (yPosition > 250) {
+              pdf.addPage();
+              yPosition = 20;
+            }
+          });
+          yPosition += 5;
+        });
+    }
+    
+    // Adicionar rodapé
+    const pageCount = pdf.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      pdf.setPage(i);
+      pdf.setFontSize(8);
+      pdf.text(
+        `Página ${i} de ${pageCount} - Gerado em ${new Date().toLocaleDateString('pt-BR')}`,
+        20,
+        pdf.internal.pageSize.height - 10
+      );
+    }
+    
+      // Salvar o PDF
+      const fileName = `gastos-diarios-${monthName.replace(' ', '-').toLowerCase()}.pdf`;
+      console.log('Salvando PDF:', fileName);
+      pdf.save(fileName);
+      console.log('PDF gerado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      alert('Erro ao gerar o arquivo PDF. Verifique o console para mais detalhes.');
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header com navegação do mês */}
@@ -375,6 +550,10 @@ export const DailyExpenses = ({ expenses, categories }: DailyExpensesProps) => {
                   <DropdownMenuItem onClick={exportToExcel}>
                     <FileSpreadsheet className="h-4 w-4 mr-2" />
                     Exportar para Excel
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={exportToPDF}>
+                    <FileText className="h-4 w-4 mr-2" />
+                    Exportar para PDF
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
