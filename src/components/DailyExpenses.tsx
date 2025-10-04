@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, ChevronLeft, ChevronRight, TrendingDown, TrendingUp, DollarSign, RefreshCw } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, TrendingDown, TrendingUp, DollarSign, RefreshCw, Download } from 'lucide-react';
 import { Expense, Category } from './ExpenseForm';
 import { useForceUpdate } from '@/hooks/use-force-update';
 import { formatDateToISO, formatDateStringForDisplay, parseDateString } from '@/lib/utils';
@@ -158,6 +158,78 @@ export const DailyExpenses = ({ expenses, categories }: DailyExpensesProps) => {
     return categories.find(cat => cat.id === categoryId);
   };
 
+  // Função para exportar dados para CSV
+  const exportToCSV = () => {
+    const csvData = currentMonthExpenses
+      .filter(day => day.transactions.length > 0) // Apenas dias com transações
+      .map(day => {
+        const dayData = [
+          // Cabeçalho para o dia
+          {
+            'Data': formatDisplayDate(day.date),
+            'Tipo': 'RESUMO DO DIA',
+            'Descrição': `Total do dia: ${day.transactions.length} transação${day.transactions.length !== 1 ? 'ões' : ''}`,
+            'Valor': '',
+            'Categoria': '',
+            'Método de Pagamento': '',
+            'Entradas': day.totalIncome > 0 ? day.totalIncome.toFixed(2).replace('.', ',') : '',
+            'Saídas': day.totalExpense > 0 ? day.totalExpense.toFixed(2).replace('.', ',') : '',
+            'Saldo': day.netAmount.toFixed(2).replace('.', ','),
+            'Observações': ''
+          }
+        ];
+
+        // Adicionar cada transação do dia
+        const transactionsData = day.transactions.map(transaction => {
+          const category = getCategoryById(transaction.category);
+          return {
+            'Data': formatDisplayDate(day.date),
+            'Tipo': transaction.type === 'income' ? 'Entrada' :
+                   transaction.type === 'expense' ? 'Despesa' :
+                   transaction.type === 'transfer' ? 'Transferência' :
+                   transaction.type === 'investment' ? 'Investimento' :
+                   transaction.type === 'investment_profit' ? 'Lucro' :
+                   transaction.type === 'loan' ? 'Empréstimo' : 'Outro',
+            'Descrição': transaction.description,
+            'Valor': transaction.amount.toFixed(2).replace('.', ','),
+            'Categoria': category?.name || 'Não definida',
+            'Método de Pagamento': transaction.paymentMethod || 'Não informado',
+            'Entradas': transaction.type === 'income' || transaction.type === 'investment_profit' ? transaction.amount.toFixed(2).replace('.', ',') : '',
+            'Saídas': transaction.type !== 'income' && transaction.type !== 'investment_profit' ? transaction.amount.toFixed(2).replace('.', ',') : '',
+            'Saldo': '',
+            'Observações': transaction.notes || ''
+          };
+        });
+
+        return [...dayData, ...transactionsData];
+      })
+      .flat();
+
+    // Criar conteúdo CSV
+    const headers = ['Data', 'Tipo', 'Descrição', 'Valor', 'Categoria', 'Método de Pagamento', 'Entradas', 'Saídas', 'Saldo', 'Observações'];
+    const csvContent = [
+      headers.join(';'),
+      ...csvData.map(row => headers.map(header => `"${row[header as keyof typeof row] || ''}"`).join(';'))
+    ].join('\n');
+
+    // Criar e baixar arquivo
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    
+    const monthName = currentDate.toLocaleDateString('pt-BR', { 
+      month: 'long', 
+      year: 'numeric' 
+    });
+    link.setAttribute('download', `gastos-diarios-${monthName.replace(' ', '-').toLowerCase()}.csv`);
+    
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header com navegação do mês */}
@@ -196,6 +268,15 @@ export const DailyExpenses = ({ expenses, categories }: DailyExpensesProps) => {
                 className="ml-2"
               >
                 <RefreshCw className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={exportToCSV}
+                className="ml-2"
+                title="Exportar para CSV"
+              >
+                <Download className="h-4 w-4" />
               </Button>
             </div>
           </div>
