@@ -56,6 +56,7 @@ const Index = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
+  const [isClearDialogOpen, setIsClearDialogOpen] = useState(false);
 
   const handleAddExpense = (expense: Omit<Expense, "id">) => {
     addExpense(expense);
@@ -103,6 +104,7 @@ const Index = () => {
   const handleClearExpenses = () => {
     clearExpenses();
     toast.success("Todos os dados foram removidos!");
+    setIsClearDialogOpen(false);
   };
 
   const handleExportExpenses = () => {
@@ -206,7 +208,7 @@ const Index = () => {
                 </DialogContent>
               </Dialog>
               
-              <Dialog>
+              <Dialog open={isClearDialogOpen} onOpenChange={setIsClearDialogOpen}>
                 <DialogTrigger asChild>
                   <Button variant="destructive" size="sm" className="flex items-center gap-2">
                     <Trash2 className="h-4 w-4" />
@@ -225,7 +227,7 @@ const Index = () => {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => {}}
+                      onClick={() => setIsClearDialogOpen(false)}
                     >
                       Cancelar
                     </Button>
