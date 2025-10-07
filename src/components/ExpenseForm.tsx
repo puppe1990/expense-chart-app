@@ -30,7 +30,7 @@ export interface Expense {
   category: string;
   date: string;
   type: "income" | "expense" | "transfer" | "investment" | "investment_profit" | "loan";
-  paymentMethod?: "cash" | "card" | "bank_transfer" | "digital_wallet" | "check" | "pix" | "other";
+  paymentMethod?: "cash" | "card" | "bank_transfer" | "digital_wallet" | "check" | "pix" | "boleto" | "other";
   notes?: string;
   tags?: string[];
   isRecurring?: boolean;
@@ -271,6 +271,7 @@ export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [] }: Ex
                 <SelectItem value="card">💳 Cartão</SelectItem>
                 <SelectItem value="digital_wallet">📱 Carteira Digital</SelectItem>
                 <SelectItem value="check">📝 Cheque</SelectItem>
+                <SelectItem value="boleto">📄 Boleto</SelectItem>
                 <SelectItem value="other">🔧 Outro</SelectItem>
               </SelectContent>
             </Select>

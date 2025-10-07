@@ -267,6 +267,7 @@ export const EditTransactionDialog = ({
                 <SelectItem value="card">💳 Cartão</SelectItem>
                 <SelectItem value="digital_wallet">📱 Carteira Digital</SelectItem>
                 <SelectItem value="check">📝 Cheque</SelectItem>
+                <SelectItem value="boleto">📄 Boleto</SelectItem>
                 <SelectItem value="other">🔧 Outro</SelectItem>
               </SelectContent>
             </Select>

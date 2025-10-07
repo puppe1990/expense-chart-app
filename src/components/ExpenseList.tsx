@@ -65,6 +65,7 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
       pix: "⚡",
       digital_wallet: "📱",
       check: "📝",
+      boleto: "📄",
       other: "🔧",
     };
     return icons[method || "cash"] || "💵";
@@ -292,6 +293,7 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
                 <SelectItem value="pix">⚡ PIX</SelectItem>
                 <SelectItem value="digital_wallet">📱 Carteira Digital</SelectItem>
                 <SelectItem value="check">📝 Cheque</SelectItem>
+                <SelectItem value="boleto">📄 Boleto</SelectItem>
                 <SelectItem value="other">🔧 Outro</SelectItem>
               </SelectContent>
             </Select>
