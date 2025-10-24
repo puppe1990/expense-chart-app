@@ -31,12 +31,30 @@ export const usePWA = () => {
     const handleOnline = () => setPwaState(prev => ({ ...prev, isOnline: true }));
     const handleOffline = () => setPwaState(prev => ({ ...prev, isOnline: false }));
 
+    let updateInterval: NodeJS.Timeout | null = null;
+
     // Register service worker
     const registerServiceWorker = async () => {
       if ('serviceWorker' in navigator) {
         try {
-          const registration = await navigator.serviceWorker.register('/sw.js');
+          const registration = await navigator.serviceWorker.register('/sw.js', {
+            updateViaCache: 'none' // Always check for updates
+          });
           console.log('Service Worker registered successfully:', registration);
+
+          // Check for updates periodically
+          const checkForUpdates = async () => {
+            try {
+              await registration.update();
+              console.log('Service Worker: Checking for updates...');
+            } catch (error) {
+              console.error('Service Worker: Error checking for updates', error);
+            }
+          };
+
+          // Check for updates immediately and then periodically
+          checkForUpdates();
+          updateInterval = setInterval(checkForUpdates, 60000); // Check every minute
 
           // Check for updates
           registration.addEventListener('updatefound', () => {
@@ -44,6 +62,7 @@ export const usePWA = () => {
             if (newWorker) {
               newWorker.addEventListener('statechange', () => {
                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  console.log('Service Worker: New version available');
                   setPwaState(prev => ({ ...prev, updateAvailable: true }));
                 }
               });
@@ -52,6 +71,7 @@ export const usePWA = () => {
 
           // Listen for controller change (app update)
           navigator.serviceWorker.addEventListener('controllerchange', () => {
+            console.log('Service Worker: Controller changed, reloading page');
             window.location.reload();
           });
 
@@ -81,6 +101,9 @@ export const usePWA = () => {
     mediaQuery.addEventListener('change', checkIfInstalled);
 
     return () => {
+      if (updateInterval) {
+        clearInterval(updateInterval);
+      }
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -88,9 +111,16 @@ export const usePWA = () => {
     };
   }, []);
 
-  const updateApp = () => {
+  const updateApp = async () => {
     if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      // Send skip waiting message
       navigator.serviceWorker.controller.postMessage({ action: 'skipWaiting' });
+      
+      // Wait a bit for the message to be processed
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Reload the page to get the new service worker
+      window.location.reload();
     }
   };
 

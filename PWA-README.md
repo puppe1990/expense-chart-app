@@ -61,15 +61,18 @@ O Expense Tracker Pro é um Progressive Web App completo que oferece uma experi�
 - **Sincronização**: Sincroniza dados quando online
 
 ### Atualizações
-- **Automáticas**: O app se atualiza automaticamente
-- **Notificações**: Receba avisos sobre novas versões
-- **Controle Manual**: Atualize manualmente quando necessário
+- **Automáticas**: O app verifica atualizações automaticamente a cada minuto
+- **Notificações**: Receba avisos sobre novas versões disponíveis
+- **Network First**: Estratégia que prioriza a rede para garantir atualizações rápidas
+- **Controle Manual**: Atualize manualmente quando necessário através da notificação
 
 ## 📊 Recursos Técnicos
 
 ### Service Worker
-- **Cache Strategy**: Cache-first para recursos estáticos
-- **Network Strategy**: Network-first para dados dinâmicos
+- **Network First Strategy**: Prioriza buscar da rede antes do cache para garantir atualizações
+- **Fallback Cache**: Usa cache apenas quando offline ou quando a rede falha
+- **Auto Update Check**: Verifica atualizações automaticamente a cada minuto
+- **Skip Waiting**: Ativa atualizações imediatamente sem esperar pelo usuário
 - **Background Sync**: Sincronização em segundo plano
 - **Push Notifications**: Suporte a notificações push
 
@@ -134,7 +137,15 @@ O PWA inclui screenshots otimizados para diferentes dispositivos:
 1. **Prompt não aparece**: Verifique se o manifest está correto
 2. **Ícones não carregam**: Verifique os caminhos dos arquivos
 3. **Offline não funciona**: Verifique o service worker
-4. **Atualizações não chegam**: Limpe o cache e recarregue
+4. **Atualizações não chegam**: O sistema agora verifica automaticamente a cada minuto
+
+### Sistema de Atualização Melhorado
+O sistema foi otimizado para resolver problemas de cache:
+- **Network First**: Prioriza sempre buscar da rede primeiro
+- **Verificação Automática**: Checa atualizações a cada 60 segundos
+- **Notificação Visual**: Exibe notificação quando nova versão é detectada
+- **Atualização Instantânea**: Ao clicar em "Atualizar", o app recarrega imediatamente
+- **Cache Inteligente**: Limpa caches antigos automaticamente quando há nova versão
 
 ### Soluções
 1. **Limpar Cache**: Use a opção nas configurações PWA

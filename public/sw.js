@@ -1,6 +1,6 @@
-const CACHE_NAME = 'expense-tracker-pro-v1.0.0';
-const STATIC_CACHE_NAME = 'expense-tracker-static-v1.0.0';
-const DYNAMIC_CACHE_NAME = 'expense-tracker-dynamic-v1.0.0';
+const CACHE_NAME = 'expense-tracker-pro-v1.0.1';
+const STATIC_CACHE_NAME = 'expense-tracker-static-v1.0.1';
+const DYNAMIC_CACHE_NAME = 'expense-tracker-dynamic-v1.0.1';
 
 // Files to cache for offline functionality
 const STATIC_FILES = [
@@ -28,12 +28,21 @@ self.addEventListener('install', (event) => {
       })
       .then(() => {
         console.log('Service Worker: Static files cached successfully');
+        // Skip waiting to activate immediately
         return self.skipWaiting();
       })
       .catch((error) => {
         console.error('Service Worker: Error caching static files', error);
       })
   );
+});
+
+// Listen for skip waiting message
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.action === 'skipWaiting') {
+    console.log('Service Worker: Skip waiting requested');
+    self.skipWaiting();
+  }
 });
 
 // Activate event - clean up old caches
@@ -59,7 +68,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch event - serve cached content when offline
+// Fetch event - Network First strategy for updates
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const { url, method } = request;
@@ -75,39 +84,44 @@ self.addEventListener('fetch', (event) => {
   }
 
   event.respondWith(
-    caches.match(request)
-      .then((cachedResponse) => {
-        // Return cached version if available
-        if (cachedResponse) {
-          console.log('Service Worker: Serving from cache', url);
-          return cachedResponse;
+    fetch(request)
+      .then((networkResponse) => {
+        // Check if response is valid
+        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+          // If network fails, try cache
+          return caches.match(request).then((cachedResponse) => {
+            if (cachedResponse) {
+              console.log('Service Worker: Network failed, serving from cache', url);
+              return cachedResponse;
+            }
+            return networkResponse;
+          });
         }
 
-        // Otherwise, fetch from network
-        return fetch(request)
-          .then((networkResponse) => {
-            // Check if response is valid
-            if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
-              return networkResponse;
+        // Clone the response for caching
+        const responseToCache = networkResponse.clone();
+
+        // Cache the response if it should be cached
+        caches.open(DYNAMIC_CACHE_NAME)
+          .then((cache) => {
+            if (shouldCache(url)) {
+              console.log('Service Worker: Caching network response', url);
+              cache.put(request, responseToCache);
             }
+          });
 
-            // Clone the response
-            const responseToCache = networkResponse.clone();
-
-            // Cache dynamic content
-            caches.open(DYNAMIC_CACHE_NAME)
-              .then((cache) => {
-                // Only cache certain file types
-                if (shouldCache(url)) {
-                  console.log('Service Worker: Caching dynamic content', url);
-                  cache.put(request, responseToCache);
-                }
-              });
-
-            return networkResponse;
-          })
-          .catch((error) => {
-            console.log('Service Worker: Network request failed', url, error);
+        return networkResponse;
+      })
+      .catch((error) => {
+        console.log('Service Worker: Network request failed, trying cache', url, error);
+        
+        // Try to get from cache
+        return caches.match(request)
+          .then((cachedResponse) => {
+            if (cachedResponse) {
+              console.log('Service Worker: Serving from cache (offline)', url);
+              return cachedResponse;
+            }
             
             // Return offline page for navigation requests
             if (request.mode === 'navigate') {
