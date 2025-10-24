@@ -4,12 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Receipt, CreditCard, FileText, Tag, RotateCcw, ArrowRightLeft, Edit, Search, X, ChevronLeft, ChevronRight, Copy, Filter, Calendar } from "lucide-react";
+import { Trash2, Receipt, CreditCard, FileText, Tag, RotateCcw, ArrowRightLeft, Edit, Search, X, ChevronLeft, ChevronRight, Copy, Filter, Calendar, Check } from "lucide-react";
 import { Category, Expense } from "./ExpenseForm";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useState, useMemo } from "react";
-import { parseDateString } from "@/lib/utils";
+import { parseDateString, cn } from "@/lib/utils";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 
 interface ExpenseListProps {
   expenses: Expense[];
@@ -35,8 +41,33 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
     showRecurring: "all"
   });
 
+  // Popover states for searchable dropdowns
+  const [categoryPopoverOpen, setCategoryPopoverOpen] = useState(false);
+  const [paymentMethodPopoverOpen, setPaymentMethodPopoverOpen] = useState(false);
+
   const getCategoryInfo = (categoryId: string) => {
     return categories.find((cat) => cat.id === categoryId);
+  };
+
+  const getCategoryLabel = () => {
+    if (filters.category === "all") return "Todas";
+    const category = getCategoryInfo(filters.category);
+    return category ? `${category.icon} ${category.name}` : "Todas";
+  };
+
+  const getPaymentMethodLabel = () => {
+    const labels: Record<string, string> = {
+      all: "Todos",
+      cash: "💵 Dinheiro",
+      card: "💳 Cartão",
+      bank_transfer: "🏦 Transferência",
+      pix: "⚡ PIX",
+      digital_wallet: "📱 Carteira Digital",
+      check: "📝 Cheque",
+      boleto: "📄 Boleto",
+      other: "🔧 Outro",
+    };
+    return labels[filters.paymentMethod] || "Todos";
   };
 
   const formatCurrency = (value: number) => {
@@ -263,40 +294,226 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
           {/* Category Filter */}
           <div className="space-y-1">
             <Label className="text-xs font-medium text-muted-foreground">Categoria</Label>
-            <Select value={filters.category} onValueChange={(value) => updateFilter("category", value)}>
-              <SelectTrigger className="h-9 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas</SelectItem>
-                {categories.map((category) => (
-                  <SelectItem key={category.id} value={category.id}>
-                    {category.icon} {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={categoryPopoverOpen} onOpenChange={setCategoryPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={categoryPopoverOpen}
+                  className="h-9 w-full justify-between text-xs"
+                >
+                  <span className="truncate">{getCategoryLabel()}</span>
+                  <Search className="ml-2 h-3 w-3 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[300px] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Buscar categoria..." />
+                  <CommandList>
+                    <CommandEmpty>Nenhuma categoria encontrada.</CommandEmpty>
+                    <CommandGroup>
+                      <CommandItem
+                        value="all"
+                        onSelect={() => {
+                          updateFilter("category", "all");
+                          setCategoryPopoverOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            filters.category === "all" ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        Todas
+                      </CommandItem>
+                      {categories.map((category) => (
+                        <CommandItem
+                          key={category.id}
+                          value={`${category.name} ${category.id}`}
+                          onSelect={() => {
+                            updateFilter("category", category.id);
+                            setCategoryPopoverOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              filters.category === category.id ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          <span className="mr-2">{category.icon}</span>
+                          {category.name}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
           {/* Payment Method Filter */}
           <div className="space-y-1">
             <Label className="text-xs font-medium text-muted-foreground">Pagamento</Label>
-            <Select value={filters.paymentMethod} onValueChange={(value) => updateFilter("paymentMethod", value)}>
-              <SelectTrigger className="h-9 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="cash">💵 Dinheiro</SelectItem>
-                <SelectItem value="card">💳 Cartão</SelectItem>
-                <SelectItem value="bank_transfer">🏦 Transferência</SelectItem>
-                <SelectItem value="pix">⚡ PIX</SelectItem>
-                <SelectItem value="digital_wallet">📱 Carteira Digital</SelectItem>
-                <SelectItem value="check">📝 Cheque</SelectItem>
-                <SelectItem value="boleto">📄 Boleto</SelectItem>
-                <SelectItem value="other">🔧 Outro</SelectItem>
-              </SelectContent>
-            </Select>
+            <Popover open={paymentMethodPopoverOpen} onOpenChange={setPaymentMethodPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={paymentMethodPopoverOpen}
+                  className="h-9 w-full justify-between text-xs"
+                >
+                  <span className="truncate">{getPaymentMethodLabel()}</span>
+                  <Search className="ml-2 h-3 w-3 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[300px] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Buscar método de pagamento..." />
+                  <CommandList>
+                    <CommandEmpty>Nenhum método encontrado.</CommandEmpty>
+                    <CommandGroup>
+                      <CommandItem
+                        value="all"
+                        onSelect={() => {
+                          updateFilter("paymentMethod", "all");
+                          setPaymentMethodPopoverOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            filters.paymentMethod === "all" ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        Todos
+                      </CommandItem>
+                      <CommandItem
+                        value="dinheiro cash"
+                        onSelect={() => {
+                          updateFilter("paymentMethod", "cash");
+                          setPaymentMethodPopoverOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            filters.paymentMethod === "cash" ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        💵 Dinheiro
+                      </CommandItem>
+                      <CommandItem
+                        value="cartão card"
+                        onSelect={() => {
+                          updateFilter("paymentMethod", "card");
+                          setPaymentMethodPopoverOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            filters.paymentMethod === "card" ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        💳 Cartão
+                      </CommandItem>
+                      <CommandItem
+                        value="transferência bank"
+                        onSelect={() => {
+                          updateFilter("paymentMethod", "bank_transfer");
+                          setPaymentMethodPopoverOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            filters.paymentMethod === "bank_transfer" ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        🏦 Transferência
+                      </CommandItem>
+                      <CommandItem
+                        value="pix"
+                        onSelect={() => {
+                          updateFilter("paymentMethod", "pix");
+                          setPaymentMethodPopoverOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            filters.paymentMethod === "pix" ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        ⚡ PIX
+                      </CommandItem>
+                      <CommandItem
+                        value="carteira digital wallet"
+                        onSelect={() => {
+                          updateFilter("paymentMethod", "digital_wallet");
+                          setPaymentMethodPopoverOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            filters.paymentMethod === "digital_wallet" ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        📱 Carteira Digital
+                      </CommandItem>
+                      <CommandItem
+                        value="cheque check"
+                        onSelect={() => {
+                          updateFilter("paymentMethod", "check");
+                          setPaymentMethodPopoverOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            filters.paymentMethod === "check" ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        📝 Cheque
+                      </CommandItem>
+                      <CommandItem
+                        value="boleto"
+                        onSelect={() => {
+                          updateFilter("paymentMethod", "boleto");
+                          setPaymentMethodPopoverOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            filters.paymentMethod === "boleto" ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        📄 Boleto
+                      </CommandItem>
+                      <CommandItem
+                        value="outro other"
+                        onSelect={() => {
+                          updateFilter("paymentMethod", "other");
+                          setPaymentMethodPopoverOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            filters.paymentMethod === "other" ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        🔧 Outro
+                      </CommandItem>
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
           {/* Date From Filter */}

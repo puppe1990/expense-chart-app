@@ -12,9 +12,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, Calendar, CreditCard, FileText, Tag, RotateCcw } from "lucide-react";
+import { PlusCircle, Calendar, CreditCard, FileText, Tag, RotateCcw, Search, Check } from "lucide-react";
 import { toast } from "sonner";
-import { getCurrentDateString } from "@/lib/utils";
+import { getCurrentDateString, cn } from "@/lib/utils";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 
 export interface Category {
   id: string;
@@ -66,6 +72,30 @@ export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [] }: Ex
   const [toAccount, setToAccount] = useState("");
   const [isLoanPayment, setIsLoanPayment] = useState(false);
   const [relatedLoanId, setRelatedLoanId] = useState("");
+  
+  // Popover states for searchable dropdowns
+  const [categoryPopoverOpen, setCategoryPopoverOpen] = useState(false);
+  const [paymentMethodPopoverOpen, setPaymentMethodPopoverOpen] = useState(false);
+
+  const getCategoryLabel = () => {
+    if (!category) return "Selecione uma categoria";
+    const cat = categories.find(c => c.id === category);
+    return cat ? `${cat.icon} ${cat.name}` : "Selecione uma categoria";
+  };
+
+  const getPaymentMethodLabel = () => {
+    const labels: Record<string, string> = {
+      cash: "💵 Dinheiro",
+      card: "💳 Cartão",
+      bank_transfer: "🏦 Transferência Bancária",
+      pix: "⚡ PIX",
+      digital_wallet: "📱 Carteira Digital",
+      check: "📝 Cheque",
+      boleto: "📄 Boleto",
+      other: "🔧 Outro",
+    };
+    return labels[paymentMethod] || "Selecione o método";
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -237,21 +267,48 @@ export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [] }: Ex
 
           <div className="space-y-3">
             <Label htmlFor="category" className="text-xs font-semibold text-gray-700 dark:text-gray-300">Categoria</Label>
-            <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className="h-12 rounded-xl border-2 border-gray-200 dark:border-gray-700 focus:border-primary transition-all duration-300 focus:scale-[1.02] shadow-sm hover:shadow-md">
-                <SelectValue placeholder="Selecione uma categoria" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.id}>
-                    <span className="flex items-center gap-2">
-                      <span>{cat.icon}</span>
-                      <span>{cat.name}</span>
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={categoryPopoverOpen} onOpenChange={setCategoryPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={categoryPopoverOpen}
+                  className="h-12 w-full justify-between rounded-xl border-2 border-gray-200 dark:border-gray-700 focus:border-primary transition-all duration-300 focus:scale-[1.02] shadow-sm hover:shadow-md"
+                >
+                  <span className="truncate">{getCategoryLabel()}</span>
+                  <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[300px] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Buscar categoria..." />
+                  <CommandList>
+                    <CommandEmpty>Nenhuma categoria encontrada.</CommandEmpty>
+                    <CommandGroup>
+                      {categories.map((cat) => (
+                        <CommandItem
+                          key={cat.id}
+                          value={`${cat.name} ${cat.id}`}
+                          onSelect={() => {
+                            setCategory(cat.id);
+                            setCategoryPopoverOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              category === cat.id ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          <span className="mr-2">{cat.icon}</span>
+                          {cat.name}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
           {/* Payment Method */}
@@ -260,21 +317,149 @@ export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [] }: Ex
               <CreditCard className="h-4 w-4" />
               Método de Pagamento
             </Label>
-            <Select value={paymentMethod} onValueChange={(value: Expense["paymentMethod"]) => setPaymentMethod(value)}>
-              <SelectTrigger className="transition-all duration-200 focus:scale-[1.02]">
-                <SelectValue placeholder="Selecione o método" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pix">⚡ PIX</SelectItem>
-                <SelectItem value="bank_transfer">🏦 Transferência Bancária</SelectItem>
-                <SelectItem value="cash">💵 Dinheiro</SelectItem>
-                <SelectItem value="card">💳 Cartão</SelectItem>
-                <SelectItem value="digital_wallet">📱 Carteira Digital</SelectItem>
-                <SelectItem value="check">📝 Cheque</SelectItem>
-                <SelectItem value="boleto">📄 Boleto</SelectItem>
-                <SelectItem value="other">🔧 Outro</SelectItem>
-              </SelectContent>
-            </Select>
+            <Popover open={paymentMethodPopoverOpen} onOpenChange={setPaymentMethodPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={paymentMethodPopoverOpen}
+                  className="w-full justify-between transition-all duration-200 focus:scale-[1.02]"
+                >
+                  <span className="truncate">{getPaymentMethodLabel()}</span>
+                  <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[300px] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Buscar método de pagamento..." />
+                  <CommandList>
+                    <CommandEmpty>Nenhum método encontrado.</CommandEmpty>
+                    <CommandGroup>
+                      <CommandItem
+                        value="pix"
+                        onSelect={() => {
+                          setPaymentMethod("pix");
+                          setPaymentMethodPopoverOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            paymentMethod === "pix" ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        ⚡ PIX
+                      </CommandItem>
+                      <CommandItem
+                        value="transferência bancária bank"
+                        onSelect={() => {
+                          setPaymentMethod("bank_transfer");
+                          setPaymentMethodPopoverOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            paymentMethod === "bank_transfer" ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        🏦 Transferência Bancária
+                      </CommandItem>
+                      <CommandItem
+                        value="dinheiro cash"
+                        onSelect={() => {
+                          setPaymentMethod("cash");
+                          setPaymentMethodPopoverOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            paymentMethod === "cash" ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        💵 Dinheiro
+                      </CommandItem>
+                      <CommandItem
+                        value="cartão card"
+                        onSelect={() => {
+                          setPaymentMethod("card");
+                          setPaymentMethodPopoverOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            paymentMethod === "card" ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        💳 Cartão
+                      </CommandItem>
+                      <CommandItem
+                        value="carteira digital wallet"
+                        onSelect={() => {
+                          setPaymentMethod("digital_wallet");
+                          setPaymentMethodPopoverOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            paymentMethod === "digital_wallet" ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        📱 Carteira Digital
+                      </CommandItem>
+                      <CommandItem
+                        value="cheque check"
+                        onSelect={() => {
+                          setPaymentMethod("check");
+                          setPaymentMethodPopoverOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            paymentMethod === "check" ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        📝 Cheque
+                      </CommandItem>
+                      <CommandItem
+                        value="boleto"
+                        onSelect={() => {
+                          setPaymentMethod("boleto");
+                          setPaymentMethodPopoverOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            paymentMethod === "boleto" ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        📄 Boleto
+                      </CommandItem>
+                      <CommandItem
+                        value="outro other"
+                        onSelect={() => {
+                          setPaymentMethod("other");
+                          setPaymentMethodPopoverOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            paymentMethod === "other" ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        🔧 Outro
+                      </CommandItem>
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
           {/* Transfer Accounts (only for transfer type) */}
