@@ -181,6 +181,17 @@ export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [] }: Ex
     handleCalcClear();
   };
 
+  const getOperationSymbol = (op: string | null) => {
+    if (!op) return "";
+    const symbols: Record<string, string> = {
+      "+": "+",
+      "-": "−",
+      "*": "×",
+      "/": "÷",
+    };
+    return symbols[op] || op;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -349,8 +360,15 @@ export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [] }: Ex
                   </PopoverTrigger>
                   <PopoverContent className="w-[280px] p-3" align="start">
                     <div className="space-y-3">
-                      <div className="text-right text-2xl font-bold p-3 bg-gray-100 dark:bg-gray-800 rounded-lg min-h-[50px] flex items-center justify-end">
-                        {calcDisplay}
+                      <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-3 min-h-[80px] flex flex-col justify-end">
+                        {calcPreviousValue && calcOperation && (
+                          <div className="text-right text-sm text-gray-600 dark:text-gray-400 mb-1">
+                            {calcPreviousValue} {getOperationSymbol(calcOperation)}
+                          </div>
+                        )}
+                        <div className="text-right text-2xl font-bold">
+                          {calcDisplay}
+                        </div>
                       </div>
                       <div className="grid grid-cols-4 gap-2">
                         <Button
