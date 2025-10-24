@@ -8,17 +8,19 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Calendar, ChevronLeft, ChevronRight, TrendingDown, TrendingUp, DollarSign, RefreshCw, Download, FileSpreadsheet, FileText } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, TrendingDown, TrendingUp, DollarSign, RefreshCw, Download, FileSpreadsheet, FileText, Edit } from 'lucide-react';
 import { Expense, Category } from './ExpenseForm';
 import { useForceUpdate } from '@/hooks/use-force-update';
 import { formatDateToISO, formatDateStringForDisplay, parseDateString } from '@/lib/utils';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { EditTransactionDialog } from './EditTransactionDialog';
 
 interface DailyExpensesProps {
   expenses: Expense[];
   categories: Category[];
+  onUpdateExpense?: (id: string, updatedExpense: Omit<Expense, "id">) => void;
 }
 
 interface DailyExpenseData {
@@ -29,9 +31,11 @@ interface DailyExpenseData {
   transactions: Expense[];
 }
 
-export const DailyExpenses = ({ expenses, categories }: DailyExpensesProps) => {
+export const DailyExpenses = ({ expenses, categories, onUpdateExpense }: DailyExpensesProps) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const forceUpdate = useForceUpdate();
 
   // Forçar atualização quando as despesas mudarem
@@ -148,6 +152,25 @@ export const DailyExpenses = ({ expenses, categories }: DailyExpensesProps) => {
       newDate.setMonth(newDate.getMonth() + 1);
       return newDate;
     });
+  };
+
+  // Handlers para edição
+  const handleEditExpense = (expense: Expense) => {
+    setEditingExpense(expense);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = (updatedExpense: Omit<Expense, "id">) => {
+    if (editingExpense && onUpdateExpense) {
+      onUpdateExpense(editingExpense.id, updatedExpense);
+    }
+    setIsEditDialogOpen(false);
+    setEditingExpense(null);
+  };
+
+  const handleCloseEditDialog = () => {
+    setIsEditDialogOpen(false);
+    setEditingExpense(null);
   };
 
   // Calcular totais do mês
@@ -669,14 +692,14 @@ export const DailyExpenses = ({ expenses, categories }: DailyExpensesProps) => {
                         return (
                           <div 
                             key={transaction.id}
-                            className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg"
+                            className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
                           >
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-3 flex-1">
                               <div 
-                                className="w-3 h-3 rounded-full"
+                                className="w-3 h-3 rounded-full flex-shrink-0"
                                 style={{ backgroundColor: category?.color || '#64748b' }}
                               />
-                              <div>
+                              <div className="flex-1 min-w-0">
                                 <div className="font-medium">{transaction.description}</div>
                                 <div className="text-sm text-gray-500 flex items-center gap-2">
                                   <span>{category?.icon} {category?.name}</span>
@@ -691,13 +714,29 @@ export const DailyExpenses = ({ expenses, categories }: DailyExpensesProps) => {
                                 </div>
                               </div>
                             </div>
-                            <div className={`font-semibold ${
-                              transaction.type === 'income' || transaction.type === 'investment_profit'
-                                ? 'text-green-600' 
-                                : 'text-red-600'
-                            }`}>
-                              {transaction.type === 'income' || transaction.type === 'investment_profit' ? '+' : '-'}
-                              {formatCurrency(transaction.amount)}
+                            <div className="flex items-center gap-3">
+                              <div className={`font-semibold ${
+                                transaction.type === 'income' || transaction.type === 'investment_profit'
+                                  ? 'text-green-600' 
+                                  : 'text-red-600'
+                              }`}>
+                                {transaction.type === 'income' || transaction.type === 'investment_profit' ? '+' : '-'}
+                                {formatCurrency(transaction.amount)}
+                              </div>
+                              {onUpdateExpense && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEditExpense(transaction);
+                                  }}
+                                  className="h-8 w-8 hover:bg-primary/10 hover:text-primary transition-all duration-300"
+                                  title="Editar transação"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              )}
                             </div>
                           </div>
                         );
@@ -710,6 +749,17 @@ export const DailyExpenses = ({ expenses, categories }: DailyExpensesProps) => {
           })
         )}
       </div>
+
+      {/* Edit Transaction Dialog */}
+      {editingExpense && (
+        <EditTransactionDialog
+          expense={editingExpense}
+          categories={categories}
+          isOpen={isEditDialogOpen}
+          onClose={handleCloseEditDialog}
+          onSave={handleSaveEdit}
+        />
+      )}
     </div>
   );
 };
