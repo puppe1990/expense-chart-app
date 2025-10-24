@@ -19,7 +19,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Edit, Calendar, CreditCard, FileText, Tag, RotateCcw } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Edit, Calendar, CreditCard, FileText, Tag, RotateCcw, Calculator } from "lucide-react";
 import { toast } from "sonner";
 import { Category, Expense } from "./ExpenseForm";
 
@@ -58,6 +63,12 @@ export const EditTransactionDialog = ({
     relatedLoanId: "",
   });
 
+  // Calculator states
+  const [calculatorOpen, setCalculatorOpen] = useState(false);
+  const [calcDisplay, setCalcDisplay] = useState("0");
+  const [calcPreviousValue, setCalcPreviousValue] = useState<string | null>(null);
+  const [calcOperation, setCalcOperation] = useState<string | null>(null);
+
   // Update form data when expense changes
   useEffect(() => {
     if (expense) {
@@ -80,6 +91,20 @@ export const EditTransactionDialog = ({
       });
     }
   }, [expense]);
+
+  // Initialize calculator with current amount when opening
+  useEffect(() => {
+    if (calculatorOpen) {
+      if (formData.amount) {
+        setCalcDisplay(formData.amount);
+      } else {
+        setCalcDisplay("0");
+      }
+      // Clear previous operation when opening calculator
+      setCalcPreviousValue(null);
+      setCalcOperation(null);
+    }
+  }, [calculatorOpen, formData.amount]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -135,6 +160,73 @@ export const EditTransactionDialog = ({
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Calculator handler functions
+  const handleCalcNumber = (num: string) => {
+    if (calcDisplay === "0") {
+      setCalcDisplay(num);
+    } else {
+      setCalcDisplay(calcDisplay + num);
+    }
+  };
+
+  const handleCalcOperation = (op: string) => {
+    if (calcPreviousValue === null) {
+      setCalcPreviousValue(calcDisplay);
+      setCalcDisplay("0");
+      setCalcOperation(op);
+    } else {
+      handleCalcEquals();
+      setCalcOperation(op);
+    }
+  };
+
+  const handleCalcEquals = () => {
+    if (calcPreviousValue && calcOperation) {
+      const prev = parseFloat(calcPreviousValue);
+      const current = parseFloat(calcDisplay);
+      let result = 0;
+
+      switch (calcOperation) {
+        case "+":
+          result = prev + current;
+          break;
+        case "-":
+          result = prev - current;
+          break;
+        case "*":
+          result = prev * current;
+          break;
+        case "/":
+          result = current !== 0 ? prev / current : 0;
+          break;
+        default:
+          result = current;
+      }
+
+      setCalcDisplay(result.toString());
+      setCalcPreviousValue(null);
+      setCalcOperation(null);
+    }
+  };
+
+  const handleCalcClear = () => {
+    setCalcDisplay("0");
+    setCalcPreviousValue(null);
+    setCalcOperation(null);
+  };
+
+  const handleCalcDecimal = () => {
+    if (!calcDisplay.includes(".")) {
+      setCalcDisplay(calcDisplay + ".");
+    }
+  };
+
+  const handleApplyCalcResult = () => {
+    handleInputChange("amount", calcDisplay);
+    setCalculatorOpen(false);
+    handleCalcClear();
   };
 
   if (!expense) return null;
@@ -208,15 +300,181 @@ export const EditTransactionDialog = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="amount">Valor (R$)</Label>
-              <Input
-                id="amount"
-                type="number"
-                step="0.01"
-                placeholder="0.00"
-                value={formData.amount}
-                onChange={(e) => handleInputChange("amount", e.target.value)}
-                className="transition-all duration-200 focus:scale-[1.02]"
-              />
+              <div className="flex gap-2">
+                <Input
+                  id="amount"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={formData.amount}
+                  onChange={(e) => handleInputChange("amount", e.target.value)}
+                  className="transition-all duration-200 focus:scale-[1.02]"
+                />
+                <Popover open={calculatorOpen} onOpenChange={setCalculatorOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="h-10 w-10 border-2 hover:border-primary transition-all duration-300"
+                    >
+                      <Calculator className="h-5 w-5" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[280px] p-3" align="start">
+                    <div className="space-y-3">
+                      <div className="text-right text-2xl font-bold p-3 bg-gray-100 dark:bg-gray-800 rounded-lg min-h-[50px] flex items-center justify-end">
+                        {calcDisplay}
+                      </div>
+                      <div className="grid grid-cols-4 gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleCalcClear}
+                          className="h-12 bg-red-100 hover:bg-red-200 dark:bg-red-900 dark:hover:bg-red-800"
+                        >
+                          C
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => handleCalcOperation("/")}
+                          className="h-12"
+                        >
+                          ÷
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => handleCalcOperation("*")}
+                          className="h-12"
+                        >
+                          ×
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => handleCalcOperation("-")}
+                          className="h-12"
+                        >
+                          −
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => handleCalcNumber("7")}
+                          className="h-12"
+                        >
+                          7
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => handleCalcNumber("8")}
+                          className="h-12"
+                        >
+                          8
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => handleCalcNumber("9")}
+                          className="h-12"
+                        >
+                          9
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => handleCalcOperation("+")}
+                          className="h-12 row-span-2"
+                        >
+                          +
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => handleCalcNumber("4")}
+                          className="h-12"
+                        >
+                          4
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => handleCalcNumber("5")}
+                          className="h-12"
+                        >
+                          5
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => handleCalcNumber("6")}
+                          className="h-12"
+                        >
+                          6
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => handleCalcNumber("1")}
+                          className="h-12"
+                        >
+                          1
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => handleCalcNumber("2")}
+                          className="h-12"
+                        >
+                          2
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => handleCalcNumber("3")}
+                          className="h-12"
+                        >
+                          3
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleCalcEquals}
+                          className="h-12 row-span-2 bg-primary text-primary-foreground hover:bg-primary/90"
+                        >
+                          =
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => handleCalcNumber("0")}
+                          className="h-12 col-span-2"
+                        >
+                          0
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleCalcDecimal}
+                          className="h-12"
+                        >
+                          .
+                        </Button>
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={handleApplyCalcResult}
+                        className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+                      >
+                        Usar Resultado
+                      </Button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
 
             <div className="space-y-2">

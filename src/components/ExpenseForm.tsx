@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -80,6 +80,20 @@ export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [] }: Ex
   const [calcDisplay, setCalcDisplay] = useState("0");
   const [calcPreviousValue, setCalcPreviousValue] = useState<string | null>(null);
   const [calcOperation, setCalcOperation] = useState<string | null>(null);
+
+  // Initialize calculator with current amount when opening
+  useEffect(() => {
+    if (calculatorOpen) {
+      if (amount) {
+        setCalcDisplay(amount);
+      } else {
+        setCalcDisplay("0");
+      }
+      // Clear previous operation when opening calculator
+      setCalcPreviousValue(null);
+      setCalcOperation(null);
+    }
+  }, [calculatorOpen, amount]);
 
   const getCategoryLabel = () => {
     if (!category) return "Selecione uma categoria";
