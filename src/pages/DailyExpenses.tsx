@@ -24,7 +24,7 @@ const defaultCategories: Category[] = [
 ];
 
 const DailyExpensesPage = () => {
-  const { expenses, updateExpense } = useExpensesStorage();
+  const { expenses, updateExpense, bulkDuplicateExpenses, deleteExpense } = useExpensesStorage();
   const [categories] = useState<Category[]>(defaultCategories);
 
   return (
@@ -54,7 +54,13 @@ const DailyExpensesPage = () => {
       </header>
 
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <DailyExpenses expenses={expenses} categories={categories} onUpdateExpense={updateExpense} />
+        <DailyExpenses 
+          expenses={expenses} 
+          categories={categories} 
+          onUpdateExpense={updateExpense}
+          onBulkDuplicate={bulkDuplicateExpenses}
+          onDeleteExpense={deleteExpense}
+        />
       </div>
     </div>
   );

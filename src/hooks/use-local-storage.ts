@@ -142,6 +142,17 @@ export function useExpensesStorage() {
     setExpenses((prev: any[]) => [duplicatedExpense, ...prev]);
   };
 
+  const bulkDuplicateExpenses = (expensesToDuplicate: any[], targetDate?: string) => {
+    const dateToUse = targetDate || getCurrentDateString();
+    const duplicatedExpenses = expensesToDuplicate.map((expense, index) => ({
+      ...expense,
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${index}`,
+      description: `${expense.description} (Cópia)`,
+      date: dateToUse,
+    }));
+    setExpenses((prev: any[]) => [...duplicatedExpenses, ...prev]);
+  };
+
   return {
     expenses,
     addExpense,
@@ -151,5 +162,6 @@ export function useExpensesStorage() {
     exportExpenses,
     importExpenses,
     duplicateExpense,
+    bulkDuplicateExpenses,
   };
 }

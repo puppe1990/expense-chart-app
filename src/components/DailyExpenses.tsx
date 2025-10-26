@@ -2,13 +2,34 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Calendar, ChevronLeft, ChevronRight, TrendingDown, TrendingUp, DollarSign, RefreshCw, Download, FileSpreadsheet, FileText, Edit } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Calendar, ChevronLeft, ChevronRight, TrendingDown, TrendingUp, DollarSign, RefreshCw, Download, FileSpreadsheet, FileText, Edit, Copy, CheckSquare, Square, Trash2 } from 'lucide-react';
 import { Expense, Category } from './ExpenseForm';
 import { useForceUpdate } from '@/hooks/use-force-update';
 import { formatDateToISO, formatDateStringForDisplay, parseDateString } from '@/lib/utils';
@@ -16,11 +37,14 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { EditTransactionDialog } from './EditTransactionDialog';
+import { toast } from 'sonner';
 
 interface DailyExpensesProps {
   expenses: Expense[];
   categories: Category[];
   onUpdateExpense?: (id: string, updatedExpense: Omit<Expense, "id">) => void;
+  onBulkDuplicate?: (expenses: Expense[], targetDate?: string) => void;
+  onDeleteExpense?: (id: string) => void;
 }
 
 interface DailyExpenseData {
@@ -31,11 +55,21 @@ interface DailyExpenseData {
   transactions: Expense[];
 }
 
-export const DailyExpenses = ({ expenses, categories, onUpdateExpense }: DailyExpensesProps) => {
+export const DailyExpenses = ({ expenses, categories, onUpdateExpense, onBulkDuplicate, onDeleteExpense }: DailyExpensesProps) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedTransactionIds, setSelectedTransactionIds] = useState<Set<string>>(new Set());
+  const [bulkMode, setBulkMode] = useState(false);
+  const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
+  const [targetDuplicateDate, setTargetDuplicateDate] = useState<string>(() => {
+    const date = new Date();
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  });
+  const [pendingDuplicateExpenses, setPendingDuplicateExpenses] = useState<Expense[]>([]);
+  const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const forceUpdate = useForceUpdate();
 
   // Forçar atualização quando as despesas mudarem
@@ -171,6 +205,89 @@ export const DailyExpenses = ({ expenses, categories, onUpdateExpense }: DailyEx
   const handleCloseEditDialog = () => {
     setIsEditDialogOpen(false);
     setEditingExpense(null);
+  };
+
+  // Bulk operation handlers
+  const handleToggleBulkMode = () => {
+    setBulkMode(!bulkMode);
+    setSelectedTransactionIds(new Set());
+  };
+
+  const handleToggleTransaction = (expenseId: string) => {
+    setSelectedTransactionIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(expenseId)) {
+        newSet.delete(expenseId);
+      } else {
+        newSet.add(expenseId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = () => {
+    const allTransactionIds = new Set(expenses.map(exp => exp.id));
+    setSelectedTransactionIds(prev => {
+      // If all are selected, deselect all. Otherwise select all.
+      if (prev.size === expenses.length) {
+        return new Set();
+      } else {
+        return allTransactionIds;
+      }
+    });
+  };
+
+  const handleBulkDuplicate = () => {
+    if (selectedTransactionIds.size === 0) {
+      toast.error('Selecione pelo menos uma transação para duplicar');
+      return;
+    }
+
+    if (onBulkDuplicate) {
+      const expensesToDuplicate = expenses.filter(exp => selectedTransactionIds.has(exp.id));
+      setPendingDuplicateExpenses(expensesToDuplicate);
+      setTargetDuplicateDate(() => {
+        const date = new Date();
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      });
+      setIsDuplicateDialogOpen(true);
+    }
+  };
+
+  const handleConfirmDuplicate = () => {
+    if (onBulkDuplicate && pendingDuplicateExpenses.length > 0) {
+      onBulkDuplicate(pendingDuplicateExpenses, targetDuplicateDate);
+      toast.success(`${pendingDuplicateExpenses.length} transação(ões) duplicada(s) com sucesso!`);
+      setSelectedTransactionIds(new Set());
+      setBulkMode(false);
+      setIsDuplicateDialogOpen(false);
+      setPendingDuplicateExpenses([]);
+    }
+  };
+
+  const handleCancelDuplicate = () => {
+    setIsDuplicateDialogOpen(false);
+    setPendingDuplicateExpenses([]);
+  };
+
+  // Delete handlers
+  const handleDeleteExpense = (expense: Expense) => {
+    setExpenseToDelete(expense);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteExpense = () => {
+    if (expenseToDelete && onDeleteExpense) {
+      onDeleteExpense(expenseToDelete.id);
+      toast.success('Transação excluída com sucesso!');
+      setExpenseToDelete(null);
+      setIsDeleteDialogOpen(false);
+    }
+  };
+
+  const cancelDeleteExpense = () => {
+    setExpenseToDelete(null);
+    setIsDeleteDialogOpen(false);
   };
 
   // Calcular totais do mês
@@ -554,6 +671,43 @@ export const DailyExpenses = ({ expenses, categories, onUpdateExpense }: DailyEx
               >
                 <RefreshCw className="h-4 w-4" />
               </Button>
+              {onBulkDuplicate && (
+                <>
+                  <Button
+                    variant={bulkMode ? "default" : "outline"}
+                    size="sm"
+                    onClick={handleToggleBulkMode}
+                    className="ml-2"
+                    title={bulkMode ? "Sair do modo de seleção" : "Selecionar múltiplas transações"}
+                  >
+                    {bulkMode ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
+                  </Button>
+                  {bulkMode && (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleSelectAll}
+                        className="ml-2"
+                        title="Selecionar todas"
+                      >
+                        <CheckSquare className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={handleBulkDuplicate}
+                        className="ml-2"
+                        disabled={selectedTransactionIds.size === 0}
+                        title="Duplicar selecionadas"
+                      >
+                        <Copy className="h-4 w-4" />
+                        {selectedTransactionIds.size > 0 && ` (${selectedTransactionIds.size})`}
+                      </Button>
+                    </>
+                  )}
+                </>
+              )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -689,12 +843,24 @@ export const DailyExpenses = ({ expenses, categories, onUpdateExpense }: DailyEx
                     <div className="space-y-3">
                       {day.transactions.map((transaction) => {
                         const category = getCategoryById(transaction.category);
+                        const isSelected = selectedTransactionIds.has(transaction.id);
                         return (
                           <div 
                             key={transaction.id}
-                            className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
+                            className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
+                              isSelected 
+                                ? 'bg-primary/10 dark:bg-primary/20 border-2 border-primary' 
+                                : 'bg-gray-50 dark:bg-gray-900/50 hover:bg-gray-100 dark:hover:bg-gray-800/50'
+                            }`}
                           >
                             <div className="flex items-center gap-3 flex-1">
+                              {bulkMode && (
+                                <Checkbox
+                                  checked={isSelected}
+                                  onCheckedChange={() => handleToggleTransaction(transaction.id)}
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              )}
                               <div 
                                 className="w-3 h-3 rounded-full flex-shrink-0"
                                 style={{ backgroundColor: category?.color || '#64748b' }}
@@ -723,20 +889,57 @@ export const DailyExpenses = ({ expenses, categories, onUpdateExpense }: DailyEx
                                 {transaction.type === 'income' || transaction.type === 'investment_profit' ? '+' : '-'}
                                 {formatCurrency(transaction.amount)}
                               </div>
-                              {onUpdateExpense && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleEditExpense(transaction);
-                                  }}
-                                  className="h-8 w-8 hover:bg-primary/10 hover:text-primary transition-all duration-300"
-                                  title="Editar transação"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                              )}
+                              <div className="flex items-center gap-1">
+                                {onUpdateExpense && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleEditExpense(transaction);
+                                    }}
+                                    className="h-8 w-8 hover:bg-primary/10 hover:text-primary transition-all duration-300"
+                                    title="Editar transação"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                {onBulkDuplicate && !bulkMode && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (onBulkDuplicate) {
+                                        setPendingDuplicateExpenses([transaction]);
+                                        setTargetDuplicateDate(() => {
+                                          const date = new Date();
+                                          return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                                        });
+                                        setIsDuplicateDialogOpen(true);
+                                      }
+                                    }}
+                                    className="h-8 w-8 hover:bg-blue-500/10 hover:text-blue-500 transition-all duration-300"
+                                    title="Duplicar transação"
+                                  >
+                                    <Copy className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                {onDeleteExpense && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteExpense(transaction);
+                                    }}
+                                    className="h-8 w-8 hover:bg-red-500/10 hover:text-red-500 transition-all duration-300"
+                                    title="Excluir transação"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
                             </div>
                           </div>
                         );
@@ -760,6 +963,80 @@ export const DailyExpenses = ({ expenses, categories, onUpdateExpense }: DailyEx
           onSave={handleSaveEdit}
         />
       )}
+
+      {/* Duplicate Dialog */}
+      <Dialog open={isDuplicateDialogOpen} onOpenChange={setIsDuplicateDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Copy className="h-5 w-5" />
+              Duplicar Transações
+            </DialogTitle>
+            <DialogDescription>
+              Escolha a data para duplicar {pendingDuplicateExpenses.length} transação(ões).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="duplicate-date" className="text-sm font-medium">
+                Data de Destino
+              </Label>
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="duplicate-date"
+                  type="date"
+                  value={targetDuplicateDate}
+                  onChange={(e) => setTargetDuplicateDate(e.target.value)}
+                  className="flex-1"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                As transações duplicadas serão adicionadas nesta data.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCancelDuplicate}>
+              Cancelar
+            </Button>
+            <Button onClick={handleConfirmDuplicate}>
+              <Copy className="h-4 w-4 mr-2" />
+              Duplicar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Trash2 className="h-5 w-5 text-destructive" />
+              Confirmar Exclusão
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-base">
+              Tem certeza que deseja excluir a transação <strong>"{expenseToDelete?.description}"</strong>?
+              <br />
+              <span className="text-sm text-muted-foreground mt-2 block">
+                Esta ação não pode ser desfeita.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelDeleteExpense}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDeleteExpense}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Sim, Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
