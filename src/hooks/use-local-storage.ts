@@ -67,9 +67,19 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
  * Hook specifically for managing expenses in localStorage
  */
 type ExpenseInput = Omit<Expense, "id">;
+const MAX_AMOUNT = 1_000_000_000;
 
 const isValidAmount = (amount: unknown): amount is number => {
-  return typeof amount === "number" && Number.isFinite(amount) && amount > 0;
+  return (
+    typeof amount === "number" &&
+    Number.isFinite(amount) &&
+    amount > 0 &&
+    amount <= MAX_AMOUNT
+  );
+};
+
+const isNonFutureDateString = (dateString: string): boolean => {
+  return dateString <= getCurrentDateString();
 };
 
 export function useExpensesStorage() {
@@ -94,6 +104,7 @@ export function useExpensesStorage() {
       typeof record.category === "string" &&
       typeof record.date === "string" &&
       dateRegex.test(record.date) &&
+      isNonFutureDateString(record.date as string) &&
       typeof record.type === "string" &&
       validTypes.includes(record.type as Expense["type"])
     );
@@ -102,6 +113,10 @@ export function useExpensesStorage() {
   const addExpense = (expense: ExpenseInput) => {
     if (!isValidAmount(expense.amount)) {
       console.error("Invalid expense amount:", expense.amount);
+      return;
+    }
+    if (!dateRegex.test(expense.date) || !isNonFutureDateString(expense.date)) {
+      console.error("Invalid expense date:", expense.date);
       return;
     }
     const newExpense = {
@@ -120,6 +135,10 @@ export function useExpensesStorage() {
   const updateExpense = (id: string, updatedExpense: ExpenseInput) => {
     if (!isValidAmount(updatedExpense.amount)) {
       console.error("Invalid expense amount:", updatedExpense.amount);
+      return;
+    }
+    if (!dateRegex.test(updatedExpense.date) || !isNonFutureDateString(updatedExpense.date)) {
+      console.error("Invalid expense date:", updatedExpense.date);
       return;
     }
     setExpenses((prev: Expense[]) => 

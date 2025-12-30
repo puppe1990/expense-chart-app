@@ -56,6 +56,8 @@ interface ExpenseFormProps {
   existingLoans?: Expense[];
 }
 
+const MAX_AMOUNT = 1_000_000_000;
+
 export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [] }: ExpenseFormProps) => {
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
@@ -201,8 +203,13 @@ export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [] }: Ex
     }
 
     const parsedAmount = Number(amount);
-    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0 || parsedAmount > MAX_AMOUNT) {
       toast.error("Informe um valor positivo válido");
+      return;
+    }
+
+    if (date > getCurrentDateString()) {
+      toast.error("A data não pode ser futura");
       return;
     }
 
