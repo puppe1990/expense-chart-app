@@ -48,6 +48,91 @@ const getPaymentMethod = (typeLabel: string): Expense["paymentMethod"] => {
 const getExpenseType = (amount: number): Expense["type"] =>
   amount < 0 ? "expense" : "income";
 
+const normalizeText = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .toLowerCase()
+    .trim();
+
+const normalizeCategoryLabel = (value: string) => normalizeText(value);
+
+const C6_CATEGORY_MAP: Record<string, string> = {
+  "supermercados / mercearia / padarias / lojas de conveniencia": "food",
+  "restaurante / lanchonete / bar": "food",
+  transporte: "transport",
+  "assistencia medica e odontologica": "health",
+  "vestuario / roupas": "shopping",
+  entretenimento: "entertainment",
+  "servicos profissionais": "business",
+  "empresa para empresa": "business",
+  "empresa servicos": "business",
+  "servicos de telecomunicacoes": "bills",
+  associacao: "bills",
+  "departamento / desconto": "shopping",
+  "especialidade varejo": "shopping",
+  "casa / escritorio mobiliario": "housing",
+  "marketing direto": "business",
+  eletrico: "bills",
+};
+
+const parseCsvLine = (line: string): string[] => {
+  const result: string[] = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i += 1) {
+    const char = line[i];
+    if (char === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"';
+        i += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+
+    if (char === ";" && !inQuotes) {
+      result.push(current.trim());
+      current = "";
+      continue;
+    }
+
+    current += char;
+  }
+
+  result.push(current.trim());
+  return result;
+};
+
+const parseBrazilianDate = (value: string): string | null => {
+  const [day, month, year] = value.split("/");
+  if (!day || !month || !year) return null;
+  return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+};
+
+const parseBrazilianNumber = (value: string): number | null => {
+  const cleaned = value.replace(/\s/g, "");
+  if (!cleaned) return null;
+  let normalized = cleaned;
+  if (cleaned.includes(",") && cleaned.includes(".")) {
+    normalized = cleaned.replace(/\./g, "").replace(",", ".");
+  } else {
+    normalized = cleaned.replace(",", ".");
+  }
+  const parsed = Number(normalized);
+  if (!Number.isFinite(parsed)) return null;
+  return parsed;
+};
+
+const buildDescription = (description: string, installment?: string): string => {
+  const trimmed = description.replace(/\s+/g, " ").trim();
+  if (!installment || installment === "Única") return trimmed;
+  return trimmed ? `${trimmed} (${installment})` : installment;
+};
+
 const parseMonthHeader = (line: string) => {
   const normalizedLine = line
     .normalize("NFD")
@@ -129,18 +214,84 @@ export const parseC6BankStatement = async (
     const [day, month] = line.split("/");
     const date = `${currentYear}-${month}-${day}`;
     const description = descriptionParts.join(" ").replace(/\s+/g, " ").trim();
+    const normalizedDescription = normalizeText(description || typeLabel);
+    const isCardPayment = normalizedDescription.includes("pgto fat cartao c6");
+    const amountValue = Math.abs(amount);
 
     expenses.push({
       description: description || typeLabel,
-      amount: Math.abs(amount),
+      amount: amountValue,
       category: "other",
       date,
-      type: getExpenseType(amount),
-      account: "pf",
+      type: isCardPayment ? "transfer" : getExpenseType(amount),
+      account: isCardPayment ? undefined : "pf",
+      fromAccount: isCardPayment ? "pf" : undefined,
+      toAccount: isCardPayment ? "card" : undefined,
       paymentMethod: getPaymentMethod(typeLabel),
     });
 
     i = endIndex;
+  }
+
+  return expenses;
+};
+
+export const parseC6CardStatementCsv = async (
+  file: File
+): Promise<Array<Omit<Expense, "id">>> => {
+  const text = await file.text();
+  const lines = text.split(/\r?\n/).filter((line) => line.trim());
+  if (lines.length <= 1) return [];
+
+  const headerCells = parseCsvLine(lines[0]).map((cell, index) =>
+    index === 0 ? cell.replace(/^\uFEFF/, "") : cell
+  );
+  const headerIndex = new Map(headerCells.map((cell, index) => [cell, index]));
+
+  const getCell = (cells: string[], key: string) => {
+    const index = headerIndex.get(key);
+    if (index === undefined) return "";
+    return cells[index] ?? "";
+  };
+
+  const expenses: Array<Omit<Expense, "id">> = [];
+
+  for (let i = 1; i < lines.length; i += 1) {
+    const cells = parseCsvLine(lines[i]);
+    const dateValue = getCell(cells, "Data de Compra");
+    const descriptionValue = getCell(cells, "Descrição");
+    const categoryValue = getCell(cells, "Categoria");
+    const installmentValue = getCell(cells, "Parcela");
+    const amountValue = getCell(cells, "Valor (em R$)");
+    const cardSuffix = getCell(cells, "Final do Cartão");
+
+    const parsedDate = parseBrazilianDate(dateValue);
+    const parsedAmount = parseBrazilianNumber(amountValue);
+    if (!parsedDate || parsedAmount === null || parsedAmount === 0) continue;
+
+    const normalizedDescription = normalizeText(descriptionValue);
+    if (normalizedDescription.includes("inclusao de pagamento")) {
+      continue;
+    }
+
+    const normalizedCategory = normalizeCategoryLabel(categoryValue);
+    const mappedCategory = C6_CATEGORY_MAP[normalizedCategory] ?? "other";
+    const isNegative = parsedAmount < 0;
+    const description = buildDescription(descriptionValue, installmentValue);
+    const category = mappedCategory;
+    const type: Expense["type"] = isNegative ? "income" : "expense";
+    const notes = cardSuffix ? `Cartão final ${cardSuffix}` : "";
+
+    expenses.push({
+      description: description || "Transação cartão",
+      amount: Math.abs(parsedAmount),
+      category,
+      date: parsedDate,
+      type,
+      account: "card",
+      paymentMethod: "card",
+      notes: notes || undefined,
+    });
   }
 
   return expenses;

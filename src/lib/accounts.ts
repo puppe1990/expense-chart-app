@@ -1,20 +1,22 @@
 import type { Expense } from "@/components/ExpenseForm";
 
-export type AccountType = "pf" | "pj";
+export type AccountType = "pf" | "pj" | "card";
 
 export const ACCOUNT_OPTIONS: Array<{ value: AccountType; label: string }> = [
   { value: "pf", label: "PF" },
   { value: "pj", label: "PJ" },
+  { value: "card", label: "Cartão" },
 ];
 
 export const normalizeAccount = (account?: string | null): AccountType | null => {
-  if (account === "pf" || account === "pj") return account;
+  if (account === "pf" || account === "pj" || account === "card") return account;
   return null;
 };
 
 export const getAccountLabel = (account?: string | null): string => {
   if (account === "pf") return "PF";
   if (account === "pj") return "PJ";
+  if (account === "card") return "Cartão";
   return account ? String(account) : "";
 };
 

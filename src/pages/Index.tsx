@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { defaultCategories } from "@/data/categories";
-import { parseC6BankStatement } from "@/lib/c6-bank-parser";
+import { parseC6BankStatement, parseC6CardStatementCsv } from "@/lib/c6-bank-parser";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -114,12 +114,15 @@ const Index = () => {
     try {
       setIsImporting(true);
       if (importBank === "c6") {
-        const parsedExpenses = await parseC6BankStatement(file, importPassword);
+        const isCsv = file.name.toLowerCase().endsWith(".csv") || file.type.includes("csv");
+        const parsedExpenses = isCsv
+          ? await parseC6CardStatementCsv(file)
+          : await parseC6BankStatement(file, importPassword);
         if (parsedExpenses.length === 0) {
-          throw new Error("Nenhuma transação encontrada no PDF.");
+          throw new Error("Nenhuma transação encontrada no arquivo.");
         }
         addExpensesBatch(parsedExpenses);
-        toast.success("Extrato do C6 Bank importado com sucesso!");
+        toast.success(isCsv ? "Fatura do C6 Cartão importada com sucesso!" : "Extrato do C6 Bank importado com sucesso!");
       } else {
         await importExpenses(file);
         toast.success("Dados importados com sucesso!");
@@ -214,7 +217,7 @@ const Index = () => {
                   <DialogHeader>
                     <DialogTitle>Importar Dados</DialogTitle>
                     <DialogDescription>
-                      Escolha o banco e selecione o arquivo do extrato para importar.
+                      Escolha o banco e selecione o arquivo para importar (C6: PDF ou CSV de fatura).
                     </DialogDescription>
                   </DialogHeader>
                   <div className="grid gap-4 py-4">
@@ -263,7 +266,7 @@ const Index = () => {
                           <Input
                             id="file"
                             type="file"
-                            accept={importBank === "c6" ? ".pdf" : ".json"}
+                            accept={importBank === "c6" ? ".pdf,.csv" : ".json"}
                             onChange={handleImportExpenses}
                             ref={setFileInputRef}
                             className="hidden"
@@ -276,7 +279,7 @@ const Index = () => {
                             </Label>
                           </p>
                           <p className="text-xs text-muted-foreground mt-1">
-                            {importBank === "c6" ? "Formato PDF" : "Formato JSON"}
+                            {importBank === "c6" ? "Formatos PDF ou CSV" : "Formato JSON"}
                           </p>
                         </div>
                       </div>

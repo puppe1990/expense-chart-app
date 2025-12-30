@@ -108,7 +108,7 @@ export function useExpensesStorage() {
       isNonFutureDateString(record.date as string) &&
       typeof record.type === "string" &&
       validTypes.includes(record.type as Expense["type"]) &&
-      (account === undefined || account === "pf" || account === "pj")
+      (account === undefined || account === "pf" || account === "pj" || account === "card")
     );
   };
 
