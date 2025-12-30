@@ -66,6 +66,12 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
 /**
  * Hook specifically for managing expenses in localStorage
  */
+type ExpenseInput = Omit<Expense, "id">;
+
+const isValidAmount = (amount: unknown): amount is number => {
+  return typeof amount === "number" && Number.isFinite(amount) && amount > 0;
+};
+
 export function useExpensesStorage() {
   const [expenses, setExpenses] = useLocalStorage('expense-chart-expenses', []);
   const validTypes: Expense["type"][] = [
@@ -84,8 +90,7 @@ export function useExpensesStorage() {
     return (
       typeof record.id === "string" &&
       typeof record.description === "string" &&
-      typeof record.amount === "number" &&
-      Number.isFinite(record.amount) &&
+      isValidAmount(record.amount) &&
       typeof record.category === "string" &&
       typeof record.date === "string" &&
       dateRegex.test(record.date) &&
@@ -94,12 +99,16 @@ export function useExpensesStorage() {
     );
   };
 
-  const addExpense = (expense: any) => {
+  const addExpense = (expense: ExpenseInput) => {
+    if (!isValidAmount(expense.amount)) {
+      console.error("Invalid expense amount:", expense.amount);
+      return;
+    }
     const newExpense = {
       ...expense,
       id: Date.now().toString(),
     };
-    setExpenses((prev: any[]) => {
+    setExpenses((prev: Expense[]) => {
       // Sempre criar um novo array para garantir que o React detecte a mudança
       const newArray = [newExpense, ...(prev || [])];
       console.log('🔄 Adicionando despesa:', newExpense);
@@ -108,16 +117,20 @@ export function useExpensesStorage() {
     });
   };
 
-  const updateExpense = (id: string, updatedExpense: any) => {
-    setExpenses((prev: any[]) => 
-      prev.map((expense: any) => 
+  const updateExpense = (id: string, updatedExpense: ExpenseInput) => {
+    if (!isValidAmount(updatedExpense.amount)) {
+      console.error("Invalid expense amount:", updatedExpense.amount);
+      return;
+    }
+    setExpenses((prev: Expense[]) => 
+      prev.map((expense: Expense) => 
         expense.id === id ? { ...updatedExpense, id } : expense
       )
     );
   };
 
   const deleteExpense = (id: string) => {
-    setExpenses((prev: any[]) => prev.filter((expense: any) => expense.id !== id));
+    setExpenses((prev: Expense[]) => prev.filter((expense: Expense) => expense.id !== id));
   };
 
   const clearExpenses = () => {
@@ -158,17 +171,17 @@ export function useExpensesStorage() {
     });
   };
 
-  const duplicateExpense = (expense: any) => {
+  const duplicateExpense = (expense: Expense) => {
     const duplicatedExpense = {
       ...expense,
       id: Date.now().toString(),
       description: `${expense.description} (Cópia)`,
       date: getCurrentDateString(), // Set to today's date
     };
-    setExpenses((prev: any[]) => [duplicatedExpense, ...prev]);
+    setExpenses((prev: Expense[]) => [duplicatedExpense, ...prev]);
   };
 
-  const bulkDuplicateExpenses = (expensesToDuplicate: any[], targetDate?: string, keepSameDay = false) => {
+  const bulkDuplicateExpenses = (expensesToDuplicate: Expense[], targetDate?: string, keepSameDay = false) => {
     const duplicatedExpenses = expensesToDuplicate.map((expense, index) => {
       let dateToUse;
       
@@ -207,7 +220,7 @@ export function useExpensesStorage() {
         date: dateToUse,
       };
     });
-    setExpenses((prev: any[]) => [...duplicatedExpenses, ...prev]);
+    setExpenses((prev: Expense[]) => [...duplicatedExpenses, ...prev]);
   };
 
   return {

@@ -200,6 +200,12 @@ export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [] }: Ex
       return;
     }
 
+    const parsedAmount = Number(amount);
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+      toast.error("Informe um valor positivo válido");
+      return;
+    }
+
     // Special validation for transfers
     if (type === "transfer" && (!fromAccount || !toAccount)) {
       toast.error("Para transferências, preencha as contas de origem e destino");
@@ -214,7 +220,7 @@ export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [] }: Ex
 
     const expense: Omit<Expense, "id"> = {
       description,
-      amount: parseFloat(amount),
+      amount: parsedAmount,
       category,
       date,
       type,
