@@ -245,16 +245,51 @@ export function useExpensesStorage() {
   const addExpensesBatch = (expensesToAdd: ExpenseInput[]) => {
     if (!Array.isArray(expensesToAdd) || expensesToAdd.length === 0) return;
     const now = Date.now();
+    const normalizeKey = (expense: ExpenseInput) => {
+      const description = expense.description.trim().toLowerCase();
+      return `${expense.date}|${expense.amount}|${expense.type}|${description}`;
+    };
     const validExpenses = expensesToAdd.filter((expense) => {
       if (!isValidAmount(expense.amount)) return false;
       return dateRegex.test(expense.date) && isNonFutureDateString(expense.date);
     });
     if (validExpenses.length === 0) return;
-    const expensesWithIds = validExpenses.map((expense, index) => ({
-      ...expense,
-      id: `${now}-${index}-${Math.random().toString(36).slice(2, 8)}`,
-    }));
-    setExpenses((prev: Expense[]) => [...expensesWithIds, ...(prev || [])]);
+    setExpenses((prev: Expense[]) => {
+      const existingKeys = new Set(
+        (prev || []).map((expense) =>
+          normalizeKey({
+            description: expense.description,
+            amount: expense.amount,
+            category: expense.category,
+            date: expense.date,
+            type: expense.type,
+            paymentMethod: expense.paymentMethod,
+            notes: expense.notes,
+            tags: expense.tags,
+            isRecurring: expense.isRecurring,
+            recurringFrequency: expense.recurringFrequency,
+            recurringEndDate: expense.recurringEndDate,
+            fromAccount: expense.fromAccount,
+            toAccount: expense.toAccount,
+            isLoanPayment: expense.isLoanPayment,
+            relatedLoanId: expense.relatedLoanId,
+            originalLoanAmount: expense.originalLoanAmount,
+          })
+        )
+      );
+      const uniqueExpenses = validExpenses.filter((expense) => {
+        const key = normalizeKey(expense);
+        if (existingKeys.has(key)) return false;
+        existingKeys.add(key);
+        return true;
+      });
+      if (uniqueExpenses.length === 0) return prev;
+      const expensesWithIds = uniqueExpenses.map((expense, index) => ({
+        ...expense,
+        id: `${now}-${index}-${Math.random().toString(36).slice(2, 8)}`,
+      }));
+      return [...expensesWithIds, ...(prev || [])];
+    });
   };
 
   return {

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Receipt, CreditCard, FileText, Tag, RotateCcw, ArrowRightLeft, Edit, Search, X, ChevronLeft, ChevronRight, Copy, Filter, Calendar, Check, Download } from "lucide-react";
+import { Trash2, Receipt, CreditCard, FileText, Tag, RotateCcw, ArrowRightLeft, Edit, Search, X, ChevronLeft, ChevronRight, Copy, Filter, Calendar, Check, Download, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { Category, Expense } from "./ExpenseForm";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -854,6 +854,15 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
                     <Button
                       variant="outline"
                       size="sm"
+                      onClick={() => goToPage(1)}
+                      disabled={currentPage === 1}
+                      className="h-8 w-8 p-0"
+                    >
+                      <ChevronsLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => goToPage(currentPage - 1)}
                       disabled={currentPage === 1}
                       className="h-8 w-8 p-0"
@@ -894,6 +903,15 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
                       className="h-8 w-8 p-0"
                     >
                       <ChevronRight className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => goToPage(totalPages)}
+                      disabled={currentPage === totalPages}
+                      className="h-8 w-8 p-0"
+                    >
+                      <ChevronsRight className="h-4 w-4" />
                     </Button>
                   </div>
                 )}
