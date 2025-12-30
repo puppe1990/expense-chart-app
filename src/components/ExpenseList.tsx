@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Receipt, CreditCard, FileText, Tag, RotateCcw, ArrowRightLeft, Edit, Search, X, ChevronLeft, ChevronRight, Copy, Filter, Calendar, Check } from "lucide-react";
+import { Trash2, Receipt, CreditCard, FileText, Tag, RotateCcw, ArrowRightLeft, Edit, Search, X, ChevronLeft, ChevronRight, Copy, Filter, Calendar, Check, Download } from "lucide-react";
 import { Category, Expense } from "./ExpenseForm";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -114,6 +114,76 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
       loan: "text-orange-600 dark:text-orange-400",
     };
     return colors[type] || "text-gray-600 dark:text-gray-400";
+  };
+
+  const getTransactionTypeLabel = (type: Expense["type"]) => {
+    const labels = {
+      income: "Entrada",
+      expense: "Saída",
+      transfer: "Transferência",
+      investment: "Investimento",
+      investment_profit: "Lucro de Investimento",
+      loan: "Empréstimo",
+    };
+    return labels[type] || "Transação";
+  };
+
+  const getPaymentMethodLabelForExport = (method?: Expense["paymentMethod"]) => {
+    const labels: Record<string, string> = {
+      cash: "Dinheiro",
+      card: "Cartão",
+      bank_transfer: "Transferência Bancária",
+      pix: "PIX",
+      digital_wallet: "Carteira Digital",
+      check: "Cheque",
+      boleto: "Boleto",
+      other: "Outro",
+    };
+    return labels[method || "cash"] || "Outro";
+  };
+
+  const escapeCsvValue = (value: string) => `"${value.replace(/"/g, '""')}"`;
+
+  const handleExportCsv = () => {
+    if (filteredExpenses.length === 0) return;
+    const headers = [
+      "Data",
+      "Descrição",
+      "Tipo",
+      "Categoria",
+      "Método",
+      "Valor",
+      "Observações",
+      "Tags",
+    ];
+    const rows = filteredExpenses.map((expense) => {
+      const category = getCategoryInfo(expense.category);
+      const dateLabel = format(parseDateString(expense.date), "dd/MM/yyyy", { locale: ptBR });
+      const tags = expense.tags?.length ? expense.tags.join(", ") : "";
+      return [
+        dateLabel,
+        expense.description,
+        getTransactionTypeLabel(expense.type),
+        category ? category.name : "Outros",
+        getPaymentMethodLabelForExport(expense.paymentMethod),
+        formatCurrency(expense.amount),
+        expense.notes || "",
+        tags,
+      ];
+    });
+    const csvContent = [
+      headers.map(escapeCsvValue).join(","),
+      ...rows.map((row) => row.map((cell) => escapeCsvValue(String(cell))).join(",")),
+    ].join("\r\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `transacoes-${format(new Date(), "yyyy-MM-dd")}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   // Filter expenses based on search query and filters
@@ -246,17 +316,29 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
               </span>
             )}
           </CardTitle>
-          {hasActiveFilters() && (
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={clearAllFilters}
+              onClick={handleExportCsv}
+              disabled={filteredExpenses.length === 0}
               className="text-xs"
             >
-              <X className="h-3 w-3 mr-1" />
-              Limpar Filtros
+              <Download className="h-3 w-3 mr-1" />
+              Exportar CSV
             </Button>
-          )}
+            {hasActiveFilters() && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearAllFilters}
+                className="text-xs"
+              >
+                <X className="h-3 w-3 mr-1" />
+                Limpar Filtros
+              </Button>
+            )}
+          </div>
         </div>
         
         {/* Search Bar */}
