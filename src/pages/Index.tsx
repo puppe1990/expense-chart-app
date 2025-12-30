@@ -6,7 +6,7 @@ import { EditTransactionDialog } from "@/components/EditTransactionDialog";
 import { Wallet, Download, Upload, Trash2, BarChart3, Calendar } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { useExpensesStorage } from "@/hooks/use-local-storage";
+import { useExpensesStorage, useLocalStorage } from "@/hooks/use-local-storage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,9 +38,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ACCOUNT_OPTIONS, AccountType, filterExpensesByAccount } from "@/lib/accounts";
 
 const Index = () => {
   const { expenses, addExpense, updateExpense, deleteExpense, clearExpenses, exportExpenses, importExpenses, duplicateExpense, addExpensesBatch } = useExpensesStorage();
+  const [activeAccount, setActiveAccount] = useLocalStorage<AccountType>("expense-chart-account", "pf");
   const [categories] = useState<Category[]>(defaultCategories);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [, setFileInputRef] = useState<HTMLInputElement | null>(null);
@@ -145,6 +147,8 @@ const Index = () => {
     await handleImportFile(file);
   };
 
+  const accountExpenses = filterExpensesByAccount(expenses, activeAccount);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -163,6 +167,18 @@ const Index = () => {
             
             {/* Navigation and Data Management Buttons */}
             <div className="flex items-center gap-2">
+              <Select value={activeAccount} onValueChange={(value: AccountType) => setActiveAccount(value)}>
+                <SelectTrigger className="w-[120px]" aria-label="Conta">
+                  <SelectValue placeholder="Conta" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ACCOUNT_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Link to="/charts">
                 <Button variant="outline" size="sm" className="flex items-center gap-2">
                   <BarChart3 className="h-4 w-4" />
@@ -319,23 +335,25 @@ const Index = () => {
 
       <div className="container mx-auto px-4 py-8 max-w-7xl">
 
-        <SummaryCards expenses={expenses} />
+        <SummaryCards expenses={accountExpenses} account={activeAccount} />
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <div className="xl:col-span-1">
             <ExpenseForm 
               categories={categories} 
               onAddExpense={handleAddExpense} 
-              existingLoans={expenses.filter(e => e.type === "loan")}
+              existingLoans={accountExpenses.filter(e => e.type === "loan")}
+              defaultAccount={activeAccount}
             />
           </div>
           <div className="xl:col-span-2">
             <ExpenseList
-              expenses={expenses}
+              expenses={accountExpenses}
               categories={categories}
               onDeleteExpense={handleDeleteExpense}
               onEditExpense={handleEditExpense}
               onDuplicateExpense={handleDuplicateExpense}
+              activeAccount={activeAccount}
             />
           </div>
         </div>
@@ -351,7 +369,7 @@ const Index = () => {
           setEditingExpense(null);
         }}
         onSave={handleUpdateExpense}
-        existingLoans={expenses.filter(e => e.type === "loan")}
+        existingLoans={accountExpenses.filter(e => e.type === "loan")}
       />
 
       {/* Delete Confirmation Dialog */}

@@ -136,6 +136,7 @@ export const parseC6BankStatement = async (
       category: "other",
       date,
       type: getExpenseType(amount),
+      account: "pf",
       paymentMethod: getPaymentMethod(typeLabel),
     });
 

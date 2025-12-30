@@ -27,6 +27,7 @@ import {
 import { Edit, Calendar, CreditCard, FileText, Tag, RotateCcw, Calculator } from "lucide-react";
 import { toast } from "sonner";
 import { Category, Expense } from "./ExpenseForm";
+import { ACCOUNT_OPTIONS, AccountType } from "@/lib/accounts";
 
 interface EditTransactionDialogProps {
   expense: Expense | null;
@@ -51,14 +52,15 @@ export const EditTransactionDialog = ({
     category: "",
     date: "",
     type: "expense" as Expense["type"],
+    account: "pf" as AccountType,
     paymentMethod: "cash" as Expense["paymentMethod"],
     notes: "",
     tags: "",
     isRecurring: false,
     recurringFrequency: "monthly" as Expense["recurringFrequency"],
     recurringEndDate: "",
-    fromAccount: "",
-    toAccount: "",
+    fromAccount: "pf" as AccountType,
+    toAccount: "pj" as AccountType,
     isLoanPayment: false,
     relatedLoanId: "",
   });
@@ -78,14 +80,15 @@ export const EditTransactionDialog = ({
         category: expense.category,
         date: expense.date,
         type: expense.type,
+        account: expense.account || "pf",
         paymentMethod: expense.paymentMethod || "cash",
         notes: expense.notes || "",
         tags: expense.tags ? expense.tags.join(", ") : "",
         isRecurring: expense.isRecurring || false,
         recurringFrequency: expense.recurringFrequency || "monthly",
         recurringEndDate: expense.recurringEndDate || "",
-        fromAccount: expense.fromAccount || "",
-        toAccount: expense.toAccount || "",
+        fromAccount: expense.fromAccount || "pf",
+        toAccount: expense.toAccount || "pj",
         isLoanPayment: expense.isLoanPayment || false,
         relatedLoanId: expense.relatedLoanId || "",
       });
@@ -119,6 +122,10 @@ export const EditTransactionDialog = ({
       toast.error("Para transferências, preencha as contas de origem e destino");
       return;
     }
+    if (formData.type === "transfer" && formData.fromAccount === formData.toAccount) {
+      toast.error("A conta de origem e destino devem ser diferentes");
+      return;
+    }
 
     // Special validation for loan payments
     if (formData.isLoanPayment && !formData.relatedLoanId) {
@@ -132,6 +139,7 @@ export const EditTransactionDialog = ({
       category: formData.category,
       date: formData.date,
       type: formData.type,
+      account: formData.type !== "transfer" ? formData.account : undefined,
       paymentMethod: formData.paymentMethod,
       notes: formData.notes.trim() || undefined,
       tags: formData.tags.trim() ? formData.tags.split(",").map(tag => tag.trim()).filter(Boolean) : undefined,
@@ -514,6 +522,24 @@ export const EditTransactionDialog = ({
             </div>
           </div>
 
+          {formData.type !== "transfer" && (
+            <div className="space-y-2">
+              <Label htmlFor="account">Conta</Label>
+              <Select value={formData.account} onValueChange={(value: AccountType) => handleInputChange("account", value)}>
+                <SelectTrigger className="transition-all duration-200 focus:scale-[1.02]">
+                  <SelectValue placeholder="Selecione a conta" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ACCOUNT_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="category">Categoria</Label>
             <Select value={formData.category} onValueChange={(value) => handleInputChange("category", value)}>
@@ -561,23 +587,33 @@ export const EditTransactionDialog = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
               <div className="space-y-2">
                 <Label htmlFor="fromAccount">Conta de Origem</Label>
-                <Input
-                  id="fromAccount"
-                  placeholder="Ex: Conta Corrente"
-                  value={formData.fromAccount}
-                  onChange={(e) => handleInputChange("fromAccount", e.target.value)}
-                  className="transition-all duration-200 focus:scale-[1.02]"
-                />
+                <Select value={formData.fromAccount} onValueChange={(value: AccountType) => handleInputChange("fromAccount", value)}>
+                  <SelectTrigger id="fromAccount" className="transition-all duration-200 focus:scale-[1.02]">
+                    <SelectValue placeholder="Selecione a conta" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ACCOUNT_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="toAccount">Conta de Destino</Label>
-                <Input
-                  id="toAccount"
-                  placeholder="Ex: Poupança"
-                  value={formData.toAccount}
-                  onChange={(e) => handleInputChange("toAccount", e.target.value)}
-                  className="transition-all duration-200 focus:scale-[1.02]"
-                />
+                <Select value={formData.toAccount} onValueChange={(value: AccountType) => handleInputChange("toAccount", value)}>
+                  <SelectTrigger id="toAccount" className="transition-all duration-200 focus:scale-[1.02]">
+                    <SelectValue placeholder="Selecione a conta" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ACCOUNT_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           )}

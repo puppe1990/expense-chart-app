@@ -2,12 +2,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { TrendingDown, TrendingUp, Wallet, TrendingUp as InvestmentIcon, CreditCard } from "lucide-react";
 import { Expense } from "./ExpenseForm";
 import { filterNonFutureExpenses } from "@/lib/utils";
+import { AccountType, getTransferImpact } from "@/lib/accounts";
 
 interface SummaryCardsProps {
   expenses: Expense[];
+  account: AccountType;
 }
 
-export const SummaryCards = ({ expenses }: SummaryCardsProps) => {
+export const SummaryCards = ({ expenses, account }: SummaryCardsProps) => {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
@@ -47,10 +49,15 @@ export const SummaryCards = ({ expenses }: SummaryCardsProps) => {
   // Calculate remaining loan balance
   const remainingLoanBalance = totalLoans - totalLoanPayments;
 
-  // Transfers don't affect the balance as they're just moving money between accounts
+  const transferImpact = currentAndPastExpenses.reduce(
+    (sum, expense) => sum + getTransferImpact(expense, account),
+    0
+  );
+
+  // Transfers don't count as income/expense, but affect the account balance
   // Investment profits are considered income for balance calculation
   // Investments should be subtracted from balance as they represent money leaving the account
-  const balance = totalIncome + totalInvestmentProfits - totalExpenses - totalInvestments;
+  const balance = totalIncome + totalInvestmentProfits - totalExpenses - totalInvestments + transferImpact;
 
   return (
     <div className="space-y-6 mb-8">

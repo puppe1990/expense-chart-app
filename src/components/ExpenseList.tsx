@@ -16,6 +16,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { AccountType, getAccountLabel, getTransferImpact } from "@/lib/accounts";
 
 interface ExpenseListProps {
   expenses: Expense[];
@@ -23,11 +24,12 @@ interface ExpenseListProps {
   onDeleteExpense: (id: string) => void;
   onEditExpense: (expense: Expense) => void;
   onDuplicateExpense: (expense: Expense) => void;
+  activeAccount: AccountType;
 }
 
 const ITEMS_PER_PAGE_OPTIONS = [5, 10, 20, 50, 100, 200];
 
-export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpense, onDuplicateExpense }: ExpenseListProps) => {
+export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpense, onDuplicateExpense, activeAccount }: ExpenseListProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(ITEMS_PER_PAGE_OPTIONS[0]);
@@ -151,6 +153,7 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
       "Descrição",
       "Tipo",
       "Categoria",
+      "Conta",
       "Método",
       "Valor",
       "Observações",
@@ -160,11 +163,15 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
       const category = getCategoryInfo(expense.category);
       const dateLabel = format(parseDateString(expense.date), "dd/MM/yyyy", { locale: ptBR });
       const tags = expense.tags?.length ? expense.tags.join(", ") : "";
+      const accountLabel = expense.type === "transfer"
+        ? `${getAccountLabel(expense.fromAccount)} -> ${getAccountLabel(expense.toAccount)}`
+        : getAccountLabel(expense.account) || "PF";
       return [
         dateLabel,
         expense.description,
         getTransactionTypeLabel(expense.type),
         category ? category.name : "Outros",
+        accountLabel,
         getPaymentMethodLabelForExport(expense.paymentMethod),
         formatCurrency(expense.amount),
         expense.notes || "",
@@ -196,15 +203,16 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
       // Search query filter
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase().trim();
-        const matchesSearch = (
-          expense.description.toLowerCase().includes(query) ||
-          categoryName.includes(query) ||
-          expense.notes?.toLowerCase().includes(query) ||
-          expense.tags?.some(tag => tag.toLowerCase().includes(query)) ||
-          expense.fromAccount?.toLowerCase().includes(query) ||
-          expense.toAccount?.toLowerCase().includes(query) ||
-          format(expenseDate, "dd MMM yyyy", { locale: ptBR }).toLowerCase().includes(query)
-        );
+          const matchesSearch = (
+            expense.description.toLowerCase().includes(query) ||
+            categoryName.includes(query) ||
+            expense.notes?.toLowerCase().includes(query) ||
+            expense.tags?.some(tag => tag.toLowerCase().includes(query)) ||
+            expense.account?.toLowerCase().includes(query) ||
+            expense.fromAccount?.toLowerCase().includes(query) ||
+            expense.toAccount?.toLowerCase().includes(query) ||
+            format(expenseDate, "dd MMM yyyy", { locale: ptBR }).toLowerCase().includes(query)
+          );
         if (!matchesSearch) return false;
       }
       
@@ -676,6 +684,11 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
               const category = getCategoryInfo(expense.category);
               const isIncome = expense.type === "income";
               const isTransfer = expense.type === "transfer";
+              const transferImpact = getTransferImpact(expense, activeAccount);
+              const transferSign = transferImpact > 0 ? "+" : transferImpact < 0 ? "-" : "";
+              const accountLabel = expense.type === "transfer"
+                ? `${getAccountLabel(expense.fromAccount)} → ${getAccountLabel(expense.toAccount)}`
+                : getAccountLabel(expense.account) || "PF";
               
               return (
                 <div
@@ -712,6 +725,9 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
                           <Badge variant="outline" className="text-xs font-medium px-3 py-1 rounded-full border-gray-300 dark:border-gray-600">
                             {getPaymentMethodIcon(expense.paymentMethod)}
                           </Badge>
+                          <Badge variant="outline" className="text-xs font-medium px-3 py-1 rounded-full border-gray-300 dark:border-gray-600">
+                            {accountLabel}
+                          </Badge>
                           {expense.isRecurring && (
                             <Badge variant="outline" className="text-xs font-medium px-3 py-1 rounded-full text-purple-600 border-purple-600 bg-purple-50 dark:bg-purple-950/20">
                               <RotateCcw className="h-3 w-3 mr-1" />
@@ -726,7 +742,7 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
                     </div>
                     <div className="flex items-center gap-4">
                       <span className={`text-lg font-black ${getTransactionTypeColor(expense.type)}`}>
-                        {isIncome ? "+" : isTransfer ? "" : "-"}{formatCurrency(expense.amount)}
+                        {isIncome ? "+" : isTransfer ? transferSign : "-"}{formatCurrency(expense.amount)}
                       </span>
                       <div className="flex items-center gap-2">
                         <Button

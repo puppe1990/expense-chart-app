@@ -1,15 +1,19 @@
 import React, { useState } from 'react';
 import { DailyExpenses } from '@/components/DailyExpenses';
 import { Category, Expense } from '@/components/ExpenseForm';
-import { useExpensesStorage } from '@/hooks/use-local-storage';
+import { useExpensesStorage, useLocalStorage } from '@/hooks/use-local-storage';
 import { Wallet, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { defaultCategories } from '@/data/categories';
+import { ACCOUNT_OPTIONS, AccountType, filterExpensesByAccount } from '@/lib/accounts';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const DailyExpensesPage = () => {
   const { expenses, updateExpense, bulkDuplicateExpenses, deleteExpense } = useExpensesStorage();
+  const [activeAccount, setActiveAccount] = useLocalStorage<AccountType>('expense-chart-account', 'pf');
   const [categories] = useState<Category[]>(defaultCategories);
+  const accountExpenses = filterExpensesByAccount(expenses, activeAccount);
 
   return (
     <div className="min-h-screen bg-background">
@@ -33,14 +37,27 @@ const DailyExpensesPage = () => {
                 Voltar
               </Button>
             </Link>
+            <Select value={activeAccount} onValueChange={(value: AccountType) => setActiveAccount(value)}>
+              <SelectTrigger className="w-[120px]" aria-label="Conta">
+                <SelectValue placeholder="Conta" />
+              </SelectTrigger>
+              <SelectContent>
+                {ACCOUNT_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </header>
 
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         <DailyExpenses 
-          expenses={expenses} 
+          expenses={accountExpenses} 
           categories={categories} 
+          account={activeAccount}
           onUpdateExpense={updateExpense}
           onBulkDuplicate={bulkDuplicateExpenses}
           onDeleteExpense={deleteExpense}

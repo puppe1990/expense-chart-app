@@ -39,10 +39,12 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { EditTransactionDialog } from './EditTransactionDialog';
 import { toast } from 'sonner';
+import { AccountType, getTransferImpact } from '@/lib/accounts';
 
 interface DailyExpensesProps {
   expenses: Expense[];
   categories: Category[];
+  account: AccountType;
   onUpdateExpense?: (id: string, updatedExpense: Omit<Expense, "id">) => void;
   onBulkDuplicate?: (expenses: Expense[], targetDate?: string, keepSameDay?: boolean) => void;
   onDeleteExpense?: (id: string) => void;
@@ -52,11 +54,12 @@ interface DailyExpenseData {
   date: string;
   totalIncome: number;
   totalExpense: number;
+  transferImpact: number;
   netAmount: number;
   transactions: Expense[];
 }
 
-export const DailyExpenses = ({ expenses, categories, onUpdateExpense, onBulkDuplicate, onDeleteExpense }: DailyExpensesProps) => {
+export const DailyExpenses = ({ expenses, categories, account, onUpdateExpense, onBulkDuplicate, onDeleteExpense }: DailyExpensesProps) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
@@ -102,16 +105,25 @@ export const DailyExpenses = ({ expenses, categories, onUpdateExpense, onBulkDup
     }).format(value);
   };
 
+  const getTransferSign = (transaction: Expense) => {
+    const impact = getTransferImpact(transaction, account);
+    if (impact > 0) return '+';
+    if (impact < 0) return '-';
+    return '';
+  };
+
   // Agrupar despesas por dia
   const dailyExpenses = useMemo(() => {
     const grouped = expenses.reduce((acc, expense) => {
       const date = expense.date;
+      const transferImpact = getTransferImpact(expense, account);
       
       if (!acc[date]) {
         acc[date] = {
           date,
           totalIncome: 0,
           totalExpense: 0,
+          transferImpact: 0,
           netAmount: 0,
           transactions: []
         };
@@ -121,17 +133,18 @@ export const DailyExpenses = ({ expenses, categories, onUpdateExpense, onBulkDup
       
       if (expense.type === 'income' || expense.type === 'investment_profit') {
         acc[date].totalIncome += expense.amount;
-      } else {
+      } else if (expense.type !== 'transfer') {
         acc[date].totalExpense += expense.amount;
       }
+      acc[date].transferImpact += transferImpact;
       
-      acc[date].netAmount = acc[date].totalIncome - acc[date].totalExpense;
+      acc[date].netAmount = acc[date].totalIncome - acc[date].totalExpense + acc[date].transferImpact;
       
       return acc;
     }, {} as Record<string, DailyExpenseData>);
 
     return Object.values(grouped).sort((a, b) => parseDateString(b.date).getTime() - parseDateString(a.date).getTime());
-  }, [expenses]);
+  }, [expenses, account]);
 
   // Filtrar despesas do mês atual e criar dias vazios
   const currentMonthExpenses = useMemo(() => {
@@ -167,6 +180,7 @@ export const DailyExpenses = ({ expenses, categories, onUpdateExpense, onBulkDup
           date: dateString,
           totalIncome: 0,
           totalExpense: 0,
+          transferImpact: 0,
           netAmount: 0,
           transactions: []
         });
@@ -378,7 +392,7 @@ export const DailyExpenses = ({ expenses, categories, onUpdateExpense, onBulkDup
             'Categoria': category?.name || 'Não definida',
             'Método de Pagamento': transaction.paymentMethod || 'Não informado',
             'Entradas': transaction.type === 'income' || transaction.type === 'investment_profit' ? transaction.amount.toFixed(2).replace('.', ',') : '',
-            'Saídas': transaction.type !== 'income' && transaction.type !== 'investment_profit' ? transaction.amount.toFixed(2).replace('.', ',') : '',
+            'Saídas': transaction.type !== 'income' && transaction.type !== 'investment_profit' && transaction.type !== 'transfer' ? transaction.amount.toFixed(2).replace('.', ',') : '',
             'Saldo': '',
             'Observações': transaction.notes || ''
           };
@@ -450,7 +464,7 @@ export const DailyExpenses = ({ expenses, categories, onUpdateExpense, onBulkDup
             'Categoria': category?.name || 'Não definida',
             'Método de Pagamento': transaction.paymentMethod || 'Não informado',
             'Entradas': transaction.type === 'income' || transaction.type === 'investment_profit' ? transaction.amount : '',
-            'Saídas': transaction.type !== 'income' && transaction.type !== 'investment_profit' ? transaction.amount : '',
+            'Saídas': transaction.type !== 'income' && transaction.type !== 'investment_profit' && transaction.type !== 'transfer' ? transaction.amount : '',
             'Saldo': '',
             'Observações': transaction.notes || ''
           };
@@ -561,7 +575,7 @@ export const DailyExpenses = ({ expenses, categories, onUpdateExpense, onBulkDup
             `R$ ${transaction.amount.toFixed(2).replace('.', ',')}`,
             category?.name || 'Não definida',
             transaction.type === 'income' || transaction.type === 'investment_profit' ? `R$ ${transaction.amount.toFixed(2).replace('.', ',')}` : '',
-            transaction.type !== 'income' && transaction.type !== 'investment_profit' ? `R$ ${transaction.amount.toFixed(2).replace('.', ',')}` : '',
+            transaction.type !== 'income' && transaction.type !== 'investment_profit' && transaction.type !== 'transfer' ? `R$ ${transaction.amount.toFixed(2).replace('.', ',')}` : '',
             '',
             transaction.notes || ''
           ];
@@ -916,11 +930,17 @@ export const DailyExpenses = ({ expenses, categories, onUpdateExpense, onBulkDup
                             </div>
                             <div className="flex items-center gap-3">
                               <div className={`font-semibold ${
-                                transaction.type === 'income' || transaction.type === 'investment_profit'
-                                  ? 'text-green-600' 
-                                  : 'text-red-600'
+                                transaction.type === 'transfer'
+                                  ? 'text-blue-600'
+                                  : transaction.type === 'income' || transaction.type === 'investment_profit'
+                                    ? 'text-green-600' 
+                                    : 'text-red-600'
                               }`}>
-                                {transaction.type === 'income' || transaction.type === 'investment_profit' ? '+' : '-'}
+                                {transaction.type === 'transfer'
+                                  ? getTransferSign(transaction)
+                                  : transaction.type === 'income' || transaction.type === 'investment_profit'
+                                    ? '+'
+                                    : '-'}
                                 {formatCurrency(transaction.amount)}
                               </div>
                               <div className="flex items-center gap-1">

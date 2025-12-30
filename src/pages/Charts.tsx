@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { ExpenseCharts } from "@/components/ExpenseCharts";
-import { Category, Expense } from "@/components/ExpenseForm";
-import { useExpensesStorage } from "@/hooks/use-local-storage";
+import { useExpensesStorage, useLocalStorage } from "@/hooks/use-local-storage";
 import { ArrowLeft, BarChart3, TrendingUp, DollarSign, Calendar, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,16 +9,19 @@ import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { filterNonFutureExpenses } from "@/lib/utils";
 import { defaultCategories } from "@/data/categories";
+import { ACCOUNT_OPTIONS, AccountType, filterExpensesByAccount } from "@/lib/accounts";
 
 const Charts = () => {
   const { expenses } = useExpensesStorage();
+  const [activeAccount, setActiveAccount] = useLocalStorage<AccountType>("expense-chart-account", "pf");
   const [timeFilter, setTimeFilter] = useState("all");
   const [chartType, setChartType] = useState("all");
 
   const currentAndPastExpenses = filterNonFutureExpenses(expenses);
+  const accountExpenses = filterExpensesByAccount(currentAndPastExpenses, activeAccount);
 
   const getFilteredExpenses = () => {
-    let filtered = currentAndPastExpenses;
+    let filtered = accountExpenses;
     
     if (timeFilter !== "all") {
       const now = new Date();
@@ -43,6 +45,8 @@ const Charts = () => {
     if (chartType !== "all") {
       filtered = filtered.filter(expense => expense.type === chartType);
     }
+
+    filtered = filtered.filter(expense => expense.type !== "transfer");
     
     return filtered;
   };
@@ -145,6 +149,18 @@ const Charts = () => {
             
             {/* Navigation Button */}
             <div className="flex items-center gap-3">
+              <Select value={activeAccount} onValueChange={(value: AccountType) => setActiveAccount(value)}>
+                <SelectTrigger className="w-[120px]">
+                  <SelectValue placeholder="Conta" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ACCOUNT_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Link to="/">
                 <Button variant="outline" size="sm" className="flex items-center gap-2 hover:bg-gray-50">
                   <ArrowLeft className="h-4 w-4" />

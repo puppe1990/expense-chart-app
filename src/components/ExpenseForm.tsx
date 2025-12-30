@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlusCircle, Calendar, CreditCard, FileText, Tag, RotateCcw, Search, Check, Calculator } from "lucide-react";
 import { toast } from "sonner";
 import { getCurrentDateString, cn } from "@/lib/utils";
+import { ACCOUNT_OPTIONS, AccountType } from "@/lib/accounts";
 import {
   Popover,
   PopoverContent,
@@ -36,14 +37,15 @@ export interface Expense {
   category: string;
   date: string;
   type: "income" | "expense" | "transfer" | "investment" | "investment_profit" | "loan";
+  account?: AccountType;
   paymentMethod?: "cash" | "card" | "bank_transfer" | "digital_wallet" | "check" | "pix" | "boleto" | "other";
   notes?: string;
   tags?: string[];
   isRecurring?: boolean;
   recurringFrequency?: "daily" | "weekly" | "monthly" | "yearly";
   recurringEndDate?: string;
-  fromAccount?: string;
-  toAccount?: string;
+  fromAccount?: AccountType;
+  toAccount?: AccountType;
   // New fields for loan payments
   isLoanPayment?: boolean;
   relatedLoanId?: string;
@@ -54,24 +56,26 @@ interface ExpenseFormProps {
   categories: Category[];
   onAddExpense: (expense: Omit<Expense, "id">) => void;
   existingLoans?: Expense[];
+  defaultAccount?: AccountType;
 }
 
 const MAX_AMOUNT = 1_000_000_000;
 
-export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [] }: ExpenseFormProps) => {
+export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [], defaultAccount = "pf" }: ExpenseFormProps) => {
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
   const [date, setDate] = useState(getCurrentDateString());
   const [type, setType] = useState<Expense["type"]>("expense");
+  const [account, setAccount] = useState<AccountType>(defaultAccount);
   const [paymentMethod, setPaymentMethod] = useState<Expense["paymentMethod"]>("cash");
   const [notes, setNotes] = useState("");
   const [tags, setTags] = useState("");
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringFrequency, setRecurringFrequency] = useState<Expense["recurringFrequency"]>("monthly");
   const [recurringEndDate, setRecurringEndDate] = useState("");
-  const [fromAccount, setFromAccount] = useState("");
-  const [toAccount, setToAccount] = useState("");
+  const [fromAccount, setFromAccount] = useState<AccountType>("pf");
+  const [toAccount, setToAccount] = useState<AccountType>("pj");
   const [isLoanPayment, setIsLoanPayment] = useState(false);
   const [relatedLoanId, setRelatedLoanId] = useState("");
   
@@ -96,6 +100,19 @@ export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [] }: Ex
       setCalcOperation(null);
     }
   }, [calculatorOpen, amount]);
+
+  useEffect(() => {
+    if (type !== "transfer") {
+      setAccount(defaultAccount);
+    }
+  }, [defaultAccount, type]);
+
+  useEffect(() => {
+    if (type === "transfer") {
+      setFromAccount(defaultAccount);
+      setToAccount(defaultAccount === "pf" ? "pj" : "pf");
+    }
+  }, [defaultAccount, type]);
 
   const getCategoryLabel = () => {
     if (!category) return "Selecione uma categoria";
@@ -218,6 +235,10 @@ export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [] }: Ex
       toast.error("Para transferências, preencha as contas de origem e destino");
       return;
     }
+    if (type === "transfer" && fromAccount === toAccount) {
+      toast.error("A conta de origem e destino devem ser diferentes");
+      return;
+    }
 
     // Special validation for loan payments
     if (isLoanPayment && !relatedLoanId) {
@@ -231,6 +252,7 @@ export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [] }: Ex
       category,
       date,
       type,
+      account: type !== "transfer" ? account : undefined,
       paymentMethod,
       notes: notes.trim() || undefined,
       tags: tags.trim() ? tags.split(",").map(tag => tag.trim()).filter(Boolean) : undefined,
@@ -251,14 +273,15 @@ export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [] }: Ex
     setCategory("");
     setDate(getCurrentDateString());
     setType("expense");
+    setAccount(defaultAccount);
     setPaymentMethod("cash");
     setNotes("");
     setTags("");
     setIsRecurring(false);
     setRecurringFrequency("monthly");
     setRecurringEndDate("");
-    setFromAccount("");
-    setToAccount("");
+    setFromAccount("pf");
+    setToAccount("pj");
     setIsLoanPayment(false);
     setRelatedLoanId("");
     
@@ -546,6 +569,24 @@ export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [] }: Ex
             </div>
           </div>
 
+          {type !== "transfer" && (
+            <div className="space-y-3">
+              <Label htmlFor="account" className="text-xs font-semibold text-gray-700 dark:text-gray-300">Conta</Label>
+              <Select value={account} onValueChange={(value: AccountType) => setAccount(value)}>
+                <SelectTrigger className="h-12 rounded-xl border-2 border-gray-200 dark:border-gray-700 focus:border-primary transition-all duration-300 focus:scale-[1.02] shadow-sm hover:shadow-md">
+                  <SelectValue placeholder="Selecione a conta" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ACCOUNT_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div className="space-y-3">
             <Label htmlFor="category" className="text-xs font-semibold text-gray-700 dark:text-gray-300">Categoria</Label>
             <Popover open={categoryPopoverOpen} onOpenChange={setCategoryPopoverOpen}>
@@ -748,23 +789,33 @@ export const ExpenseForm = ({ categories, onAddExpense, existingLoans = [] }: Ex
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
               <div className="space-y-2">
                 <Label htmlFor="fromAccount">Conta de Origem</Label>
-                <Input
-                  id="fromAccount"
-                  placeholder="Ex: Conta Corrente"
-                  value={fromAccount}
-                  onChange={(e) => setFromAccount(e.target.value)}
-                  className="transition-all duration-200 focus:scale-[1.02]"
-                />
+                <Select value={fromAccount} onValueChange={(value: AccountType) => setFromAccount(value)}>
+                  <SelectTrigger id="fromAccount" className="transition-all duration-200 focus:scale-[1.02]">
+                    <SelectValue placeholder="Selecione a conta" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ACCOUNT_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="toAccount">Conta de Destino</Label>
-                <Input
-                  id="toAccount"
-                  placeholder="Ex: Poupança"
-                  value={toAccount}
-                  onChange={(e) => setToAccount(e.target.value)}
-                  className="transition-all duration-200 focus:scale-[1.02]"
-                />
+                <Select value={toAccount} onValueChange={(value: AccountType) => setToAccount(value)}>
+                  <SelectTrigger id="toAccount" className="transition-all duration-200 focus:scale-[1.02]">
+                    <SelectValue placeholder="Selecione a conta" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ACCOUNT_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           )}

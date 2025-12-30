@@ -97,6 +97,7 @@ export function useExpensesStorage() {
   const isExpenseRecord = (value: unknown): value is Expense => {
     if (!value || typeof value !== "object") return false;
     const record = value as Record<string, unknown>;
+    const account = record.account as string | undefined;
     return (
       typeof record.id === "string" &&
       typeof record.description === "string" &&
@@ -106,7 +107,8 @@ export function useExpensesStorage() {
       dateRegex.test(record.date) &&
       isNonFutureDateString(record.date as string) &&
       typeof record.type === "string" &&
-      validTypes.includes(record.type as Expense["type"])
+      validTypes.includes(record.type as Expense["type"]) &&
+      (account === undefined || account === "pf" || account === "pj")
     );
   };
 
@@ -247,7 +249,9 @@ export function useExpensesStorage() {
     const now = Date.now();
     const normalizeKey = (expense: ExpenseInput) => {
       const description = expense.description.trim().toLowerCase();
-      return `${expense.date}|${expense.amount}|${expense.type}|${description}`;
+      const accountKey = expense.account ?? "";
+      const transferKey = `${expense.fromAccount ?? ""}|${expense.toAccount ?? ""}`;
+      return `${expense.date}|${expense.amount}|${expense.type}|${accountKey}|${transferKey}|${description}`;
     };
     const validExpenses = expensesToAdd.filter((expense) => {
       if (!isValidAmount(expense.amount)) return false;
