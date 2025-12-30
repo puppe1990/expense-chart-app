@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { defaultCategories } from "@/data/categories";
+import { parseC6BankStatement } from "@/lib/c6-bank-parser";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,17 +31,27 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const Index = () => {
-  const { expenses, addExpense, updateExpense, deleteExpense, clearExpenses, exportExpenses, importExpenses, duplicateExpense } = useExpensesStorage();
+  const { expenses, addExpense, updateExpense, deleteExpense, clearExpenses, exportExpenses, importExpenses, duplicateExpense, addExpensesBatch } = useExpensesStorage();
   const [categories] = useState<Category[]>(defaultCategories);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
-  const [fileInputRef, setFileInputRef] = useState<HTMLInputElement | null>(null);
+  const [, setFileInputRef] = useState<HTMLInputElement | null>(null);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
   const [isClearDialogOpen, setIsClearDialogOpen] = useState(false);
+  const [importBank, setImportBank] = useState("c6");
+  const [importPassword, setImportPassword] = useState("023997");
+  const [isImporting, setIsImporting] = useState(false);
 
   const handleAddExpense = (expense: Omit<Expense, "id">) => {
     addExpense(expense);
@@ -101,11 +112,24 @@ const Index = () => {
     if (!file) return;
 
     try {
-      await importExpenses(file);
-      toast.success("Dados importados com sucesso!");
+      setIsImporting(true);
+      if (importBank === "c6") {
+        const parsedExpenses = await parseC6BankStatement(file, importPassword);
+        if (parsedExpenses.length === 0) {
+          throw new Error("Nenhuma transação encontrada no PDF.");
+        }
+        addExpensesBatch(parsedExpenses);
+        toast.success("Extrato do C6 Bank importado com sucesso!");
+      } else {
+        await importExpenses(file);
+        toast.success("Dados importados com sucesso!");
+      }
       setIsImportDialogOpen(false);
     } catch (error) {
       toast.error("Erro ao importar dados. Verifique o formato do arquivo.");
+    } finally {
+      setIsImporting(false);
+      event.target.value = "";
     }
   };
 
@@ -162,10 +186,38 @@ const Index = () => {
                   <DialogHeader>
                     <DialogTitle>Importar Dados</DialogTitle>
                     <DialogDescription>
-                      Selecione um arquivo JSON com seus dados de despesas para importar.
+                      Escolha o banco e selecione o arquivo do extrato para importar.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="bank" className="text-right">
+                        Banco
+                      </Label>
+                      <Select value={importBank} onValueChange={setImportBank}>
+                        <SelectTrigger id="bank" className="col-span-3">
+                          <SelectValue placeholder="Selecione o banco" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="c6">C6 Bank</SelectItem>
+                          <SelectItem value="json">Arquivo JSON do app</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {importBank === "c6" && (
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="password" className="text-right">
+                          Senha
+                        </Label>
+                        <Input
+                          id="password"
+                          type="password"
+                          value={importPassword}
+                          onChange={(event) => setImportPassword(event.target.value)}
+                          className="col-span-3"
+                        />
+                      </div>
+                    )}
                     <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="file" className="text-right">
                         Arquivo
@@ -173,10 +225,11 @@ const Index = () => {
                       <Input
                         id="file"
                         type="file"
-                        accept=".json"
+                        accept={importBank === "c6" ? ".pdf" : ".json"}
                         onChange={handleImportExpenses}
                         ref={setFileInputRef}
                         className="col-span-3"
+                        disabled={isImporting}
                       />
                     </div>
                   </div>
@@ -185,6 +238,7 @@ const Index = () => {
                       type="button"
                       variant="outline"
                       onClick={() => setIsImportDialogOpen(false)}
+                      disabled={isImporting}
                     >
                       Cancelar
                     </Button>

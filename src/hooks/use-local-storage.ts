@@ -242,6 +242,21 @@ export function useExpensesStorage() {
     setExpenses((prev: Expense[]) => [...duplicatedExpenses, ...prev]);
   };
 
+  const addExpensesBatch = (expensesToAdd: ExpenseInput[]) => {
+    if (!Array.isArray(expensesToAdd) || expensesToAdd.length === 0) return;
+    const now = Date.now();
+    const validExpenses = expensesToAdd.filter((expense) => {
+      if (!isValidAmount(expense.amount)) return false;
+      return dateRegex.test(expense.date) && isNonFutureDateString(expense.date);
+    });
+    if (validExpenses.length === 0) return;
+    const expensesWithIds = validExpenses.map((expense, index) => ({
+      ...expense,
+      id: `${now}-${index}-${Math.random().toString(36).slice(2, 8)}`,
+    }));
+    setExpenses((prev: Expense[]) => [...expensesWithIds, ...(prev || [])]);
+  };
+
   return {
     expenses,
     addExpense,
@@ -252,5 +267,6 @@ export function useExpensesStorage() {
     importExpenses,
     duplicateExpense,
     bulkDuplicateExpenses,
+    addExpensesBatch,
   };
 }
