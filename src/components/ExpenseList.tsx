@@ -8,7 +8,7 @@ import { Trash2, Receipt, CreditCard, FileText, Tag, RotateCcw, ArrowRightLeft, 
 import { Category, Expense } from "./ExpenseForm";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { parseDateString, cn } from "@/lib/utils";
 import {
   Popover,
@@ -25,11 +25,12 @@ interface ExpenseListProps {
   onDuplicateExpense: (expense: Expense) => void;
 }
 
-const ITEMS_PER_PAGE = 5;
+const ITEMS_PER_PAGE_OPTIONS = [5, 10, 20, 50];
 
 export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpense, onDuplicateExpense }: ExpenseListProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(ITEMS_PER_PAGE_OPTIONS[0]);
   
   // Filter states
   const [filters, setFilters] = useState({
@@ -176,10 +177,16 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
   }, [expenses, searchQuery, filters, categories]);
 
   // Pagination logic
-  const totalPages = Math.ceil(filteredExpenses.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const totalPages = Math.max(1, Math.ceil(filteredExpenses.length / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
   const paginatedExpenses = filteredExpenses.slice(startIndex, endIndex);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   // Filter update functions
   const updateFilter = (key: string, value: string) => {
@@ -730,57 +737,84 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
             </div>
 
             {/* Pagination Controls */}
-            {totalPages > 1 && (
-              <div className="mt-6 flex items-center justify-between">
-                <div className="text-sm text-muted-foreground">
-                  Mostrando {startIndex + 1}-{Math.min(endIndex, filteredExpenses.length)} de {filteredExpenses.length} transações
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => goToPage(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className="h-8 w-8 p-0"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  
-                  <div className="flex items-center gap-1">
-                    {(() => {
-                      const maxVisiblePages = 5;
-                      const startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-                      const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-                      const pages = [];
-                      
-                      for (let i = startPage; i <= endPage; i++) {
-                        pages.push(i);
-                      }
-                      
-                      return pages.map((page) => (
-                        <Button
-                          key={page}
-                          variant={currentPage === page ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => goToPage(page)}
-                          className="h-8 w-8 p-0 text-xs"
-                        >
-                          {page}
-                        </Button>
-                      ));
-                    })()}
+                  {filteredExpenses.length > 0 && (
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                  <span>
+                    Mostrando {startIndex + 1}-{Math.min(endIndex, filteredExpenses.length)} de {filteredExpenses.length} transações
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="items-per-page" className="text-xs text-muted-foreground">
+                      Linhas por página
+                    </Label>
+                    <Select
+                      value={itemsPerPage.toString()}
+                      onValueChange={(value) => {
+                        setItemsPerPage(Number(value));
+                        setCurrentPage(1);
+                      }}
+                    >
+                      <SelectTrigger id="items-per-page" className="h-8 w-[90px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ITEMS_PER_PAGE_OPTIONS.map((option) => (
+                          <SelectItem key={option} value={option.toString()}>
+                            {option}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => goToPage(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className="h-8 w-8 p-0"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
                 </div>
+                {totalPages > 1 && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => goToPage(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="h-8 w-8 p-0"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    
+                    <div className="flex items-center gap-1">
+                      {(() => {
+                        const maxVisiblePages = 5;
+                        const startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+                        const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+                        const pages = [];
+                        
+                        for (let i = startPage; i <= endPage; i++) {
+                          pages.push(i);
+                        }
+                        
+                        return pages.map((page) => (
+                          <Button
+                            key={page}
+                            variant={currentPage === page ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => goToPage(page)}
+                            className="h-8 w-8 p-0 text-xs"
+                          >
+                            {page}
+                          </Button>
+                        ));
+                      })()}
+                    </div>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => goToPage(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="h-8 w-8 p-0"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
           </>
