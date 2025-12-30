@@ -136,18 +136,22 @@ const Index = () => {
   };
 
   const handleImportExpenses = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    await handleImportFile(file);
+    const files = Array.from(event.target.files ?? []);
+    if (files.length === 0) return;
+    for (const file of files) {
+      await handleImportFile(file);
+    }
     event.target.value = "";
   };
 
   const handleDropFile = async (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setIsDragging(false);
-    const file = event.dataTransfer.files?.[0];
-    if (!file) return;
-    await handleImportFile(file);
+    const files = Array.from(event.dataTransfer.files ?? []);
+    if (files.length === 0) return;
+    for (const file of files) {
+      await handleImportFile(file);
+    }
   };
 
   const accountExpenses = filterExpensesByAccount(expenses, activeAccount);
@@ -267,6 +271,7 @@ const Index = () => {
                             id="file"
                             type="file"
                             accept={importBank === "c6" ? ".pdf,.csv" : ".json"}
+                            multiple
                             onChange={handleImportExpenses}
                             ref={setFileInputRef}
                             className="hidden"
