@@ -52,6 +52,7 @@ const Index = () => {
   const [importBank, setImportBank] = useState("c6");
   const [importPassword, setImportPassword] = useState("023997");
   const [isImporting, setIsImporting] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   const handleAddExpense = (expense: Omit<Expense, "id">) => {
     addExpense(expense);
@@ -107,10 +108,7 @@ const Index = () => {
     toast.success("Dados exportados com sucesso!");
   };
 
-  const handleImportExpenses = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
+  const handleImportFile = async (file: File) => {
     try {
       setIsImporting(true);
       if (importBank === "c6") {
@@ -129,8 +127,22 @@ const Index = () => {
       toast.error("Erro ao importar dados. Verifique o formato do arquivo.");
     } finally {
       setIsImporting(false);
-      event.target.value = "";
     }
+  };
+
+  const handleImportExpenses = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    await handleImportFile(file);
+    event.target.value = "";
+  };
+
+  const handleDropFile = async (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDragging(false);
+    const file = event.dataTransfer.files?.[0];
+    if (!file) return;
+    await handleImportFile(file);
   };
 
   return (
@@ -222,15 +234,36 @@ const Index = () => {
                       <Label htmlFor="file" className="text-right">
                         Arquivo
                       </Label>
-                      <Input
-                        id="file"
-                        type="file"
-                        accept={importBank === "c6" ? ".pdf" : ".json"}
-                        onChange={handleImportExpenses}
-                        ref={setFileInputRef}
-                        className="col-span-3"
-                        disabled={isImporting}
-                      />
+                      <div className="col-span-3">
+                        <div
+                          className={`flex flex-col items-center justify-center rounded-md border border-dashed px-4 py-6 text-center text-sm transition-colors ${isDragging ? "border-primary bg-primary/5" : "border-muted-foreground/30"}`}
+                          onDragOver={(event) => {
+                            event.preventDefault();
+                            setIsDragging(true);
+                          }}
+                          onDragLeave={() => setIsDragging(false)}
+                          onDrop={handleDropFile}
+                        >
+                          <Input
+                            id="file"
+                            type="file"
+                            accept={importBank === "c6" ? ".pdf" : ".json"}
+                            onChange={handleImportExpenses}
+                            ref={setFileInputRef}
+                            className="hidden"
+                            disabled={isImporting}
+                          />
+                          <p className="text-muted-foreground">
+                            Arraste o arquivo aqui ou{" "}
+                            <Label htmlFor="file" className="cursor-pointer text-primary underline-offset-4 hover:underline">
+                              selecione no computador
+                            </Label>
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {importBank === "c6" ? "Formato PDF" : "Formato JSON"}
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   <DialogFooter>
