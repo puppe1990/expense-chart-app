@@ -152,6 +152,7 @@ export const EditTransactionDialog = ({
       expense: "Despesa atualizada com sucesso!",
       transfer: "Transferência atualizada com sucesso!",
       investment: "Investimento atualizado com sucesso!",
+      investment_profit: "Lucro de investimento atualizado com sucesso!",
       loan: "Empréstimo atualizado com sucesso!",
     };
     
@@ -285,6 +286,12 @@ export const EditTransactionDialog = ({
                   <span className="flex items-center gap-2">
                     <span>📈</span>
                     <span>Investimento</span>
+                  </span>
+                </SelectItem>
+                <SelectItem value="investment_profit">
+                  <span className="flex items-center gap-2">
+                    <span>💰</span>
+                    <span>Lucro de Investimento</span>
                   </span>
                 </SelectItem>
                 <SelectItem value="loan">

@@ -83,6 +83,7 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
       expense: "💸",
       transfer: "🔄",
       investment: "📈",
+      investment_profit: "💰",
       loan: "🏦",
     };
     return icons[type] || "📝";
@@ -108,6 +109,7 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
       expense: "text-red-600 dark:text-red-400",
       transfer: "text-blue-600 dark:text-blue-400",
       investment: "text-purple-600 dark:text-purple-400",
+      investment_profit: "text-emerald-600 dark:text-emerald-400",
       loan: "text-orange-600 dark:text-orange-400",
     };
     return colors[type] || "text-gray-600 dark:text-gray-400";
@@ -286,6 +288,7 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
                 <SelectItem value="expense">💸 Despesa</SelectItem>
                 <SelectItem value="transfer">🔄 Transferência</SelectItem>
                 <SelectItem value="investment">📈 Investimento</SelectItem>
+                <SelectItem value="investment_profit">💰 Lucro de Investimento</SelectItem>
                 <SelectItem value="loan">🏦 Empréstimo</SelectItem>
               </SelectContent>
             </Select>

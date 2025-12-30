@@ -1,8 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, AreaChart, Area, ComposedChart } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, AreaChart, Area } from "recharts";
 import { Category, Expense } from "./ExpenseForm";
-import { BarChart3, PieChart as PieChartIcon, TrendingUp, Activity, DollarSign, Calendar, Tag } from "lucide-react";
-import { filterNonFutureExpenses, parseDateString } from "@/lib/utils";
+import { BarChart3, PieChart as PieChartIcon, TrendingUp, Activity, DollarSign, Tag } from "lucide-react";
+import { formatDateToISO, parseDateString } from "@/lib/utils";
 
 interface ExpenseChartsProps {
   expenses: Expense[];
@@ -35,14 +35,24 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
   };
 
   const getMonthlyData = () => {
-    const monthlyData: { [key: string]: { income: number; expense: number; investment: number; profit: number; net: number } } = {};
+    const monthlyData: {
+      [key: string]: {
+        label: string;
+        income: number;
+        expense: number;
+        investment: number;
+        profit: number;
+        net: number;
+      };
+    } = {};
     
     currentAndPastExpenses.forEach((expense) => {
       const date = parseDateString(expense.date);
-      const monthKey = date.toLocaleString("pt-BR", { month: "short", year: "numeric" });
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      const monthLabel = date.toLocaleString("pt-BR", { month: "short", year: "numeric" });
       
       if (!monthlyData[monthKey]) {
-        monthlyData[monthKey] = { income: 0, expense: 0, investment: 0, profit: 0, net: 0 };
+        monthlyData[monthKey] = { label: monthLabel, income: 0, expense: 0, investment: 0, profit: 0, net: 0 };
       }
       
       switch (expense.type) {
@@ -63,7 +73,8 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
 
     return Object.entries(monthlyData)
       .map(([month, data]) => ({
-        month,
+        monthKey: month,
+        monthLabel: data.label,
         income: data.income,
         expense: data.expense,
         investment: data.investment,
@@ -71,39 +82,33 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
         net: data.income + data.profit - data.expense - data.investment,
         total: data.income + data.expense + data.investment + data.profit,
       }))
-      .sort((a, b) => {
-        const dateA = new Date(a.month);
-        const dateB = new Date(b.month);
-        return dateA.getTime() - dateB.getTime();
-      });
+      .sort((a, b) => a.monthKey.localeCompare(b.monthKey));
   };
 
   const getInvestmentProfitData = () => {
-    const monthlyProfits: { [key: string]: number } = {};
+    const monthlyProfits: { [key: string]: { label: string; total: number } } = {};
     
     currentAndPastExpenses
       .filter((expense) => expense.type === "investment_profit")
       .forEach((expense) => {
-        const date = new Date(expense.date + 'T00:00:00');
-        const monthKey = date.toLocaleString("pt-BR", { month: "short", year: "numeric" });
+        const date = parseDateString(expense.date);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+        const monthLabel = date.toLocaleString("pt-BR", { month: "short", year: "numeric" });
         
         if (monthlyProfits[monthKey]) {
-          monthlyProfits[monthKey] += expense.amount;
+          monthlyProfits[monthKey].total += expense.amount;
         } else {
-          monthlyProfits[monthKey] = expense.amount;
+          monthlyProfits[monthKey] = { label: monthLabel, total: expense.amount };
         }
       });
 
     return Object.entries(monthlyProfits)
       .map(([month, total]) => ({
-        month,
-        profit: total,
+        monthKey: month,
+        monthLabel: total.label,
+        profit: total.total,
       }))
-      .sort((a, b) => {
-        const dateA = new Date(a.month);
-        const dateB = new Date(b.month);
-        return dateA.getTime() - dateB.getTime();
-      });
+      .sort((a, b) => a.monthKey.localeCompare(b.monthKey));
   };
 
   const getWeeklyData = () => {
@@ -113,7 +118,7 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
       const date = parseDateString(expense.date);
       const weekStart = new Date(date);
       weekStart.setDate(date.getDate() - date.getDay());
-      const weekKey = weekStart.toLocaleDateString("pt-BR", { month: "short", day: "numeric" });
+      const weekKey = formatDateToISO(weekStart);
       
       if (!weeklyTotals[weekKey]) {
         weeklyTotals[weekKey] = { income: 0, expense: 0, net: 0 };
@@ -128,16 +133,13 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
 
     return Object.entries(weeklyTotals)
       .map(([week, totals]) => ({
-        week,
+        weekKey: week,
+        weekLabel: parseDateString(week).toLocaleDateString("pt-BR", { month: "short", day: "numeric" }),
         income: totals.income,
         expense: totals.expense,
         net: totals.income - totals.expense,
       }))
-      .sort((a, b) => {
-        const dateA = new Date(a.week);
-        const dateB = new Date(b.week);
-        return dateA.getTime() - dateB.getTime();
-      });
+      .sort((a, b) => a.weekKey.localeCompare(b.weekKey));
   };
 
   const getTypeDistribution = () => {
@@ -302,7 +304,7 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#6b7280' }} />
+                <XAxis dataKey="monthLabel" tick={{ fontSize: 12, fill: '#6b7280' }} />
                 <YAxis tick={{ fontSize: 12, fill: '#6b7280' }} />
                 <Tooltip 
                   formatter={(value, name) => [
@@ -359,7 +361,7 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                  <XAxis dataKey="week" tick={{ fontSize: 12, fill: '#6b7280' }} />
+                  <XAxis dataKey="weekLabel" tick={{ fontSize: 12, fill: '#6b7280' }} />
                   <YAxis tick={{ fontSize: 12, fill: '#6b7280' }} />
                   <Tooltip 
                     formatter={(value, name) => [
@@ -438,7 +440,7 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#6b7280' }} />
+                <XAxis dataKey="monthLabel" tick={{ fontSize: 12, fill: '#6b7280' }} />
                 <YAxis tick={{ fontSize: 12, fill: '#6b7280' }} />
                 <Tooltip 
                   formatter={(value) => [
@@ -483,7 +485,7 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                  <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#6b7280' }} />
+                  <XAxis dataKey="monthLabel" tick={{ fontSize: 12, fill: '#6b7280' }} />
                   <YAxis tick={{ fontSize: 12, fill: '#6b7280' }} />
                   <Tooltip 
                     formatter={(value) => [formatCurrency(value as number), 'Lucros']}

@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,7 +44,7 @@ interface DailyExpensesProps {
   expenses: Expense[];
   categories: Category[];
   onUpdateExpense?: (id: string, updatedExpense: Omit<Expense, "id">) => void;
-  onBulkDuplicate?: (expenses: Expense[], targetDate?: string) => void;
+  onBulkDuplicate?: (expenses: Expense[], targetDate?: string, keepSameDay?: boolean) => void;
   onDeleteExpense?: (id: string) => void;
 }
 
@@ -70,6 +71,12 @@ export const DailyExpenses = ({ expenses, categories, onUpdateExpense, onBulkDup
   const [pendingDuplicateExpenses, setPendingDuplicateExpenses] = useState<Expense[]>([]);
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectUntilMonth, setSelectUntilMonth] = useState(false);
+  const [monthToSelect, setMonthToSelect] = useState<string>(() => {
+    const date = new Date();
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+  });
+  const [keepSameDayOfMonth, setKeepSameDayOfMonth] = useState(false);
   const forceUpdate = useForceUpdate();
 
   // Forçar atualização quando as despesas mudarem
@@ -226,14 +233,13 @@ export const DailyExpenses = ({ expenses, categories, onUpdateExpense, onBulkDup
   };
 
   const handleSelectAll = () => {
-    const allTransactionIds = new Set(expenses.map(exp => exp.id));
+    const allTransactionIds = new Set(
+      currentMonthExpenses.flatMap(day => day.transactions.map(exp => exp.id))
+    );
     setSelectedTransactionIds(prev => {
-      // If all are selected, deselect all. Otherwise select all.
-      if (prev.size === expenses.length) {
-        return new Set();
-      } else {
-        return allTransactionIds;
-      }
+      const isAllSelected = allTransactionIds.size > 0 &&
+        Array.from(allTransactionIds).every(id => prev.has(id));
+      return isAllSelected ? new Set() : allTransactionIds;
     });
   };
 
@@ -256,18 +262,46 @@ export const DailyExpenses = ({ expenses, categories, onUpdateExpense, onBulkDup
 
   const handleConfirmDuplicate = () => {
     if (onBulkDuplicate && pendingDuplicateExpenses.length > 0) {
-      onBulkDuplicate(pendingDuplicateExpenses, targetDuplicateDate);
-      toast.success(`${pendingDuplicateExpenses.length} transação(ões) duplicada(s) com sucesso!`);
+      let expensesToDuplicate = pendingDuplicateExpenses;
+      
+      // Se a opção de selecionar até o mês está ativada
+      if (selectUntilMonth) {
+        // Encontrar todas as transações até o mês selecionado
+        const selectedMonth = monthToSelect; // formato: YYYY-MM
+        const expensesUntilMonth = expenses.filter(expense => {
+          const expenseDate = new Date(expense.date + 'T00:00:00');
+          const expenseMonthStr = `${expenseDate.getFullYear()}-${String(expenseDate.getMonth() + 1).padStart(2, '0')}`;
+          return expenseMonthStr <= selectedMonth;
+        });
+        
+        // Combinar com as transações já selecionadas
+        const selectedIds = new Set(pendingDuplicateExpenses.map(exp => exp.id));
+        expensesToDuplicate = expensesUntilMonth.filter(exp => !selectedIds.has(exp.id));
+        
+        toast.success(`${pendingDuplicateExpenses.length + expensesToDuplicate.length} transação(ões) duplicada(s) com sucesso!`);
+      } else {
+        toast.success(`${pendingDuplicateExpenses.length} transação(ões) duplicada(s) com sucesso!`);
+      }
+      
+      // Duplicar todas as transações selecionadas
+      const allExpenses = [...pendingDuplicateExpenses, ...expensesToDuplicate];
+      const uniqueExpenses = Array.from(new Map(allExpenses.map(exp => [exp.id, exp])).values());
+      onBulkDuplicate(uniqueExpenses, targetDuplicateDate, keepSameDayOfMonth);
+      
       setSelectedTransactionIds(new Set());
       setBulkMode(false);
       setIsDuplicateDialogOpen(false);
       setPendingDuplicateExpenses([]);
+      setSelectUntilMonth(false);
+      setKeepSameDayOfMonth(false);
     }
   };
 
   const handleCancelDuplicate = () => {
     setIsDuplicateDialogOpen(false);
     setPendingDuplicateExpenses([]);
+    setSelectUntilMonth(false);
+    setKeepSameDayOfMonth(false);
   };
 
   // Delete handlers
@@ -966,7 +1000,7 @@ export const DailyExpenses = ({ expenses, categories, onUpdateExpense, onBulkDup
 
       {/* Duplicate Dialog */}
       <Dialog open={isDuplicateDialogOpen} onOpenChange={setIsDuplicateDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Copy className="h-5 w-5" />
@@ -994,6 +1028,70 @@ export const DailyExpenses = ({ expenses, categories, onUpdateExpense, onBulkDup
               <p className="text-xs text-muted-foreground">
                 As transações duplicadas serão adicionadas nesta data.
               </p>
+            </div>
+            
+            {bulkMode && (
+              <div className="grid gap-2 border-t pt-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="select-until-month" className="text-sm font-medium">
+                      Selecionar transações até um mês
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Duplicar todas as transações até o mês selecionado
+                    </p>
+                  </div>
+                  <Switch
+                    id="select-until-month"
+                    checked={selectUntilMonth}
+                    onCheckedChange={setSelectUntilMonth}
+                  />
+                </div>
+                
+                {selectUntilMonth && (
+                  <div className="grid gap-2">
+                    <Label htmlFor="month-select" className="text-sm font-medium">
+                      Selecionar até o mês
+                    </Label>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="month-select"
+                        type="month"
+                        value={monthToSelect}
+                        onChange={(e) => setMonthToSelect(e.target.value)}
+                        className="flex-1"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Todas as transações até este mês serão incluídas na duplicação.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            <div className="grid gap-2 border-t pt-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="keep-same-day" className="text-sm font-medium">
+                    Manter o mesmo dia do mês
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Duplica no mesmo dia proporcional ao mês de destino
+                  </p>
+                </div>
+                <Switch
+                  id="keep-same-day"
+                  checked={keepSameDayOfMonth}
+                  onCheckedChange={setKeepSameDayOfMonth}
+                />
+              </div>
+              {keepSameDayOfMonth && (
+                <p className="text-xs text-muted-foreground">
+                  Exemplo: se a transação original é dia 15, será duplicada para dia 15 do mês de destino
+                </p>
+              )}
             </div>
           </div>
           <DialogFooter>

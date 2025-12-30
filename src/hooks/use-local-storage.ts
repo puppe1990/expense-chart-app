@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getCurrentDateString } from '@/lib/utils';
+import { Expense } from '@/components/ExpenseForm';
 
 /**
  * Custom hook for managing local storage with TypeScript support
@@ -67,6 +68,31 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
  */
 export function useExpensesStorage() {
   const [expenses, setExpenses] = useLocalStorage('expense-chart-expenses', []);
+  const validTypes: Expense["type"][] = [
+    "income",
+    "expense",
+    "transfer",
+    "investment",
+    "investment_profit",
+    "loan",
+  ];
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+
+  const isExpenseRecord = (value: unknown): value is Expense => {
+    if (!value || typeof value !== "object") return false;
+    const record = value as Record<string, unknown>;
+    return (
+      typeof record.id === "string" &&
+      typeof record.description === "string" &&
+      typeof record.amount === "number" &&
+      Number.isFinite(record.amount) &&
+      typeof record.category === "string" &&
+      typeof record.date === "string" &&
+      dateRegex.test(record.date) &&
+      typeof record.type === "string" &&
+      validTypes.includes(record.type as Expense["type"])
+    );
+  };
 
   const addExpense = (expense: any) => {
     const newExpense = {
@@ -117,7 +143,7 @@ export function useExpensesStorage() {
       reader.onload = (e) => {
         try {
           const importedData = JSON.parse(e.target?.result as string);
-          if (Array.isArray(importedData)) {
+          if (Array.isArray(importedData) && importedData.every(isExpenseRecord)) {
             setExpenses(importedData);
             resolve();
           } else {
@@ -142,14 +168,45 @@ export function useExpensesStorage() {
     setExpenses((prev: any[]) => [duplicatedExpense, ...prev]);
   };
 
-  const bulkDuplicateExpenses = (expensesToDuplicate: any[], targetDate?: string) => {
-    const dateToUse = targetDate || getCurrentDateString();
-    const duplicatedExpenses = expensesToDuplicate.map((expense, index) => ({
-      ...expense,
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${index}`,
-      description: `${expense.description} (Cópia)`,
-      date: dateToUse,
-    }));
+  const bulkDuplicateExpenses = (expensesToDuplicate: any[], targetDate?: string, keepSameDay = false) => {
+    const duplicatedExpenses = expensesToDuplicate.map((expense, index) => {
+      let dateToUse;
+      
+      if (keepSameDay && targetDate) {
+        // Manter o mesmo dia do mês
+        const originalDate = new Date(expense.date + 'T00:00:00');
+        const targetDateObj = new Date(targetDate + 'T00:00:00');
+        
+        // Usar o mesmo dia do mês da transação original no mês de destino
+        let newDate = new Date(
+          targetDateObj.getFullYear(),
+          targetDateObj.getMonth(),
+          originalDate.getDate()
+        );
+        
+        // Se o dia não existe no mês (ex: 31 de fevereiro), usar o último dia do mês
+        const lastDay = new Date(targetDateObj.getFullYear(), targetDateObj.getMonth() + 1, 0).getDate();
+        if (originalDate.getDate() > lastDay) {
+          newDate = new Date(
+            targetDateObj.getFullYear(),
+            targetDateObj.getMonth(),
+            lastDay
+          );
+        }
+        
+        dateToUse = `${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, '0')}-${String(newDate.getDate()).padStart(2, '0')}`;
+      } else {
+        // Usar a data de destino fornecida ou data atual
+        dateToUse = targetDate || getCurrentDateString();
+      }
+      
+      return {
+        ...expense,
+        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${index}`,
+        description: `${expense.description} (Cópia)`,
+        date: dateToUse,
+      };
+    });
     setExpenses((prev: any[]) => [...duplicatedExpenses, ...prev]);
   };
 
