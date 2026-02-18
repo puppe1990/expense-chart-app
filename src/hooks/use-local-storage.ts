@@ -4,6 +4,7 @@ import { Expense } from '@/components/ExpenseForm';
 import { AccountType, filterExpensesByAccount } from '@/lib/accounts';
 import { getAuthToken } from '@/hooks/use-auth';
 import { useAuth } from '@/hooks/use-auth';
+import { applyAutoCategory } from '@/lib/category-rules';
 
 /**
  * Custom hook for managing local storage with TypeScript support
@@ -70,6 +71,14 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
  * Hook specifically for managing expenses in localStorage
  */
 type ExpenseInput = Omit<Expense, "id">;
+type BatchImportResult = {
+  received: number;
+  valid: number;
+  invalid: number;
+  duplicates: number;
+  added: number;
+  autoCategorized: number;
+};
 const MAX_AMOUNT = 1_000_000_000;
 const generateId = () =>
   typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
@@ -182,16 +191,17 @@ export function useExpensesStorage() {
   };
 
   const addExpense = (expense: ExpenseInput) => {
-    if (!isValidAmount(expense.amount)) {
-      console.error("Invalid expense amount:", expense.amount);
+    const normalizedExpense = applyAutoCategory(expense);
+    if (!isValidAmount(normalizedExpense.amount)) {
+      console.error("Invalid expense amount:", normalizedExpense.amount);
       return;
     }
-    if (!dateRegex.test(expense.date) || !isNonFutureDateString(expense.date)) {
-      console.error("Invalid expense date:", expense.date);
+    if (!dateRegex.test(normalizedExpense.date) || !isNonFutureDateString(normalizedExpense.date)) {
+      console.error("Invalid expense date:", normalizedExpense.date);
       return;
     }
     const newExpense = {
-      ...expense,
+      ...normalizedExpense,
       id: generateId(),
     };
     setExpenses((prev: Expense[]) => {
@@ -376,54 +386,75 @@ export function useExpensesStorage() {
     }
   };
 
-  const addExpensesBatch = (expensesToAdd: ExpenseInput[]) => {
-    if (!Array.isArray(expensesToAdd) || expensesToAdd.length === 0) return;
+  const addExpensesBatch = (expensesToAdd: ExpenseInput[]): BatchImportResult => {
+    if (!Array.isArray(expensesToAdd) || expensesToAdd.length === 0) {
+      return { received: 0, valid: 0, invalid: 0, duplicates: 0, added: 0, autoCategorized: 0 };
+    }
     const now = Date.now();
+    const received = expensesToAdd.length;
+    const normalizedExpenses = expensesToAdd.map((expense) => applyAutoCategory(expense));
+    const autoCategorized = expensesToAdd.reduce((count, expense, index) => {
+      const next = normalizedExpenses[index];
+      return count + (expense.category === "other" && next.category !== "other" ? 1 : 0);
+    }, 0);
+
     const normalizeKey = (expense: ExpenseInput) => {
       const description = expense.description.trim().toLowerCase();
       const accountKey = expense.account ?? "";
       const transferKey = `${expense.fromAccount ?? ""}|${expense.toAccount ?? ""}`;
       return `${expense.date}|${expense.amount}|${expense.type}|${accountKey}|${transferKey}|${description}`;
     };
-    const validExpenses = expensesToAdd.filter((expense) => {
+    const validExpenses = normalizedExpenses.filter((expense) => {
       if (!isValidAmount(expense.amount)) return false;
       return dateRegex.test(expense.date) && isNonFutureDateString(expense.date);
     });
-    if (validExpenses.length === 0) return;
-    setExpenses((prev: Expense[]) => {
-      const existingKeys = new Set(
-        (prev || []).map((expense) =>
-          normalizeKey({
-            description: expense.description,
-            amount: expense.amount,
-            category: expense.category,
-            date: expense.date,
-            type: expense.type,
-            paymentMethod: expense.paymentMethod,
-            notes: expense.notes,
-            tags: expense.tags,
-            isRecurring: expense.isRecurring,
-            recurringFrequency: expense.recurringFrequency,
-            recurringEndDate: expense.recurringEndDate,
-            fromAccount: expense.fromAccount,
-            toAccount: expense.toAccount,
-            isLoanPayment: expense.isLoanPayment,
-            relatedLoanId: expense.relatedLoanId,
-            originalLoanAmount: expense.originalLoanAmount,
-          })
-        )
-      );
-      const uniqueExpenses = validExpenses.filter((expense) => {
-        const key = normalizeKey(expense);
-        if (existingKeys.has(key)) return false;
-        existingKeys.add(key);
-        return true;
-      });
-      if (uniqueExpenses.length === 0) return prev;
+    if (validExpenses.length === 0) {
+      return {
+        received,
+        valid: 0,
+        invalid: received,
+        duplicates: 0,
+        added: 0,
+        autoCategorized,
+      };
+    }
+
+    const existingKeys = new Set(
+      (expenses || []).map((expense) =>
+        normalizeKey({
+          description: expense.description,
+          amount: expense.amount,
+          category: expense.category,
+          date: expense.date,
+          type: expense.type,
+          paymentMethod: expense.paymentMethod,
+          notes: expense.notes,
+          tags: expense.tags,
+          isRecurring: expense.isRecurring,
+          recurringFrequency: expense.recurringFrequency,
+          recurringEndDate: expense.recurringEndDate,
+          fromAccount: expense.fromAccount,
+          toAccount: expense.toAccount,
+          isLoanPayment: expense.isLoanPayment,
+          relatedLoanId: expense.relatedLoanId,
+          originalLoanAmount: expense.originalLoanAmount,
+        })
+      )
+    );
+    const uniqueExpenses = validExpenses.filter((expense) => {
+      const key = normalizeKey(expense);
+      if (existingKeys.has(key)) return false;
+      existingKeys.add(key);
+      return true;
+    });
+
+    if (uniqueExpenses.length > 0) {
       const expensesWithIds = uniqueExpenses.map((expense, index) => ({
         ...expense,
         id: `${generateId()}-${now}-${index}`,
       }));
+
+      setExpenses((prev: Expense[]) => [...expensesWithIds, ...(prev || [])]);
 
       if (USE_REMOTE_STORAGE) {
         void apiRequest("/batch", {
@@ -433,9 +464,16 @@ export function useExpensesStorage() {
           console.error("Failed to insert expenses batch in Turso", error);
         });
       }
+    }
 
-      return [...expensesWithIds, ...(prev || [])];
-    });
+    return {
+      received,
+      valid: validExpenses.length,
+      invalid: received - validExpenses.length,
+      duplicates: validExpenses.length - uniqueExpenses.length,
+      added: uniqueExpenses.length,
+      autoCategorized,
+    };
   };
 
   return {

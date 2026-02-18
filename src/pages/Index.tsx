@@ -3,6 +3,8 @@ import { ExpenseForm, Category, Expense } from "@/components/ExpenseForm";
 import { ExpenseList } from "@/components/ExpenseList";
 import { SummaryCards } from "@/components/SummaryCards";
 import { FinancialHealthPanel } from "@/components/FinancialHealthPanel";
+import { MonthlyDrePanel } from "@/components/MonthlyDrePanel";
+import { CodexAssistant } from "@/components/CodexAssistant";
 import { EditTransactionDialog } from "@/components/EditTransactionDialog";
 import { Wallet, Download, Upload, Trash2, BarChart3, Calendar, LogOut } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -124,8 +126,13 @@ const Index = () => {
         if (parsedExpenses.length === 0) {
           throw new Error("Nenhuma transação encontrada no arquivo.");
         }
-        addExpensesBatch(parsedExpenses);
-        toast.success(isCsv ? "Fatura do C6 Cartão importada com sucesso!" : "Extrato do C6 Bank importado com sucesso!");
+        const result = addExpensesBatch(parsedExpenses);
+        if (result.added === 0) {
+          throw new Error("Nenhuma transação nova para importar.");
+        }
+        toast.success(
+          `${isCsv ? "Fatura C6" : "Extrato C6"}: ${result.added} adicionadas, ${result.duplicates} duplicadas, ${result.invalid} inválidas, ${result.autoCategorized} auto-categorizadas.`
+        );
       } else {
         await importExpenses(file);
         toast.success("Dados importados com sucesso!");
@@ -357,6 +364,8 @@ const Index = () => {
 
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         <FinancialHealthPanel expenses={expenses} />
+        <MonthlyDrePanel expenses={expenses} />
+        <CodexAssistant />
 
         <SummaryCards expenses={accountExpenses} account={activeAccount} />
 

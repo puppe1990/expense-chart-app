@@ -24,10 +24,9 @@ export default tseslint.config(
     },
   },
   {
-    files: ["server/**/*.ts"],
-    languageOptions: {
-      ecmaVersion: 2020,
-      globals: globals.node,
+    files: ["src/components/ui/**/*.tsx", "src/hooks/use-auth.tsx"],
+    rules: {
+      "react-refresh/only-export-components": "off",
     },
   }
 );
