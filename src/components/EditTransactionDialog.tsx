@@ -167,8 +167,11 @@ export const EditTransactionDialog = ({
     toast.success(typeMessages[formData.type]);
   };
 
-  const handleInputChange = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleInputChange = <K extends keyof typeof formData>(
+    field: K,
+    value: (typeof formData)[K]
+  ) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   // Calculator handler functions

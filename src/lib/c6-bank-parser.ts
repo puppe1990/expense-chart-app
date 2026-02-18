@@ -19,7 +19,7 @@ const MONTHS: Record<string, string> = {
 const normalizeLine = (line: string) =>
   line
     .replace(/\s+/g, " ")
-    .replace(/\u0000/g, "")
+    .replaceAll("\u0000", "")
     .trim();
 
 const isDateLine = (line: string) => /^\d{2}\/\d{2}$/.test(line);

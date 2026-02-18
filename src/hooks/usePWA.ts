@@ -7,6 +7,10 @@ interface PWAState {
   updateAvailable: boolean;
 }
 
+interface NavigatorWithStandalone extends Navigator {
+  standalone?: boolean;
+}
+
 export const usePWA = () => {
   const [pwaState, setPwaState] = useState<PWAState>({
     isOnline: navigator.onLine,
@@ -19,7 +23,7 @@ export const usePWA = () => {
     // Check if app is installed (running in standalone mode)
     const checkIfInstalled = () => {
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-      const isInApp = (window.navigator as any).standalone === true; // iOS Safari
+      const isInApp = (window.navigator as NavigatorWithStandalone).standalone === true; // iOS Safari
       
       setPwaState(prev => ({
         ...prev,

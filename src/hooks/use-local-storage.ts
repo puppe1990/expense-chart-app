@@ -1,6 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getCurrentDateString } from '@/lib/utils';
 import { Expense } from '@/components/ExpenseForm';
+import { AccountType, filterExpensesByAccount } from '@/lib/accounts';
+import { getAuthToken } from '@/hooks/use-auth';
+import { useAuth } from '@/hooks/use-auth';
 
 /**
  * Custom hook for managing local storage with TypeScript support
@@ -25,22 +28,22 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
   });
 
   // Return a wrapped version of useState's setter function that persists the new value to localStorage
-  const setValue = (value: T | ((val: T) => T)) => {
+  const setValue = useCallback((value: T | ((val: T) => T)) => {
     try {
-      // Allow value to be a function so we have the same API as useState
-      const valueToStore = value instanceof Function ? value(storedValue) : value;
-      
-      // Save state
-      setStoredValue(valueToStore);
-      
-      // Save to local storage
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(key, JSON.stringify(valueToStore));
-      }
+      setStoredValue((previousValue) => {
+        const valueToStore =
+          value instanceof Function ? value(previousValue) : value;
+
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem(key, JSON.stringify(valueToStore));
+        }
+
+        return valueToStore;
+      });
     } catch (error) {
       console.error(`Error setting localStorage key "${key}":`, error);
     }
-  };
+  }, [key]);
 
   // Listen for changes to this localStorage key from other tabs/windows
   useEffect(() => {
@@ -68,6 +71,10 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
  */
 type ExpenseInput = Omit<Expense, "id">;
 const MAX_AMOUNT = 1_000_000_000;
+const generateId = () =>
+  typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
 const isValidAmount = (amount: unknown): amount is number => {
   return (
@@ -82,8 +89,36 @@ const isNonFutureDateString = (dateString: string): boolean => {
   return dateString <= getCurrentDateString();
 };
 
+const EXPENSES_API_BASE = "/api/expenses";
+const USE_REMOTE_STORAGE = import.meta.env.VITE_USE_TURSO !== "false";
+
+const apiRequest = async <T>(path = "", init?: RequestInit): Promise<T> => {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error("Not authenticated");
+  }
+
+  const response = await fetch(`${EXPENSES_API_BASE}${path}`, {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    ...init,
+  });
+  if (!response.ok) {
+    throw new Error(`API request failed: ${response.status}`);
+  }
+  if (response.status === 204) {
+    return undefined as T;
+  }
+  return (await response.json()) as T;
+};
+
 export function useExpensesStorage() {
-  const [expenses, setExpenses] = useLocalStorage('expense-chart-expenses', []);
+  const { user } = useAuth();
+  const expensesStorageKey = `expense-chart-expenses-${user?.id ?? "anonymous"}`;
+  const [localExpenses, setLocalExpenses] = useLocalStorage<Expense[]>(expensesStorageKey, []);
+  const [expenses, setExpenses] = useState<Expense[]>(localExpenses);
   const validTypes: Expense["type"][] = [
     "income",
     "expense",
@@ -93,6 +128,40 @@ export function useExpensesStorage() {
     "loan",
   ];
   const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+
+  useEffect(() => {
+    setExpenses(localExpenses);
+  }, [localExpenses]);
+
+  useEffect(() => {
+    setLocalExpenses(expenses);
+  }, [expenses, setLocalExpenses]);
+
+  useEffect(() => {
+    if (!USE_REMOTE_STORAGE) return;
+    if (!getAuthToken()) return;
+
+    const loadRemoteExpenses = async () => {
+      try {
+        const remoteExpenses = await apiRequest<Expense[]>("");
+        if (Array.isArray(remoteExpenses) && remoteExpenses.length === 0 && localExpenses.length > 0) {
+          await apiRequest("/batch", {
+            method: "POST",
+            body: JSON.stringify(localExpenses),
+          });
+          setExpenses(localExpenses);
+          return;
+        }
+        if (Array.isArray(remoteExpenses)) {
+          setExpenses(remoteExpenses);
+        }
+      } catch (error) {
+        console.error("Failed to load remote expenses. Using local data.", error);
+      }
+    };
+
+    void loadRemoteExpenses();
+  }, [localExpenses]);
 
   const isExpenseRecord = (value: unknown): value is Expense => {
     if (!value || typeof value !== "object") return false;
@@ -123,7 +192,7 @@ export function useExpensesStorage() {
     }
     const newExpense = {
       ...expense,
-      id: Date.now().toString(),
+      id: generateId(),
     };
     setExpenses((prev: Expense[]) => {
       // Sempre criar um novo array para garantir que o React detecte a mudança
@@ -132,6 +201,15 @@ export function useExpensesStorage() {
       console.log('📊 Nova lista de despesas:', newArray);
       return newArray;
     });
+
+    if (USE_REMOTE_STORAGE) {
+      void apiRequest("", {
+        method: "POST",
+        body: JSON.stringify(newExpense),
+      }).catch((error) => {
+        console.error("Failed to persist expense in Turso", error);
+      });
+    }
   };
 
   const updateExpense = (id: string, updatedExpense: ExpenseInput) => {
@@ -148,23 +226,51 @@ export function useExpensesStorage() {
         expense.id === id ? { ...updatedExpense, id } : expense
       )
     );
+
+    if (USE_REMOTE_STORAGE) {
+      void apiRequest(`/${id}`, {
+        method: "PUT",
+        body: JSON.stringify({ ...updatedExpense, id }),
+      }).catch((error) => {
+        console.error("Failed to update expense in Turso", error);
+      });
+    }
   };
 
   const deleteExpense = (id: string) => {
     setExpenses((prev: Expense[]) => prev.filter((expense: Expense) => expense.id !== id));
+
+    if (USE_REMOTE_STORAGE) {
+      void apiRequest(`/${id}`, {
+        method: "DELETE",
+      }).catch((error) => {
+        console.error("Failed to delete expense in Turso", error);
+      });
+    }
   };
 
   const clearExpenses = () => {
     setExpenses([]);
+
+    if (USE_REMOTE_STORAGE) {
+      void apiRequest("", {
+        method: "DELETE",
+      }).catch((error) => {
+        console.error("Failed to clear expenses in Turso", error);
+      });
+    }
   };
 
-  const exportExpenses = () => {
-    const dataStr = JSON.stringify(expenses, null, 2);
+  const exportExpenses = (account?: AccountType) => {
+    const dataToExport = account ? filterExpensesByAccount(expenses, account) : expenses;
+    const dataStr = JSON.stringify(dataToExport, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `expenses-${getCurrentDateString()}.json`;
+    link.download = account
+      ? `expenses-${account}-${getCurrentDateString()}.json`
+      : `expenses-${getCurrentDateString()}.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -179,6 +285,14 @@ export function useExpensesStorage() {
           const importedData = JSON.parse(e.target?.result as string);
           if (Array.isArray(importedData) && importedData.every(isExpenseRecord)) {
             setExpenses(importedData);
+            if (USE_REMOTE_STORAGE) {
+              void apiRequest("/replace", {
+                method: "PUT",
+                body: JSON.stringify(importedData),
+              }).catch((error) => {
+                console.error("Failed to replace expenses in Turso", error);
+              });
+            }
             resolve();
           } else {
             reject(new Error('Invalid file format'));
@@ -195,11 +309,20 @@ export function useExpensesStorage() {
   const duplicateExpense = (expense: Expense) => {
     const duplicatedExpense = {
       ...expense,
-      id: Date.now().toString(),
+      id: generateId(),
       description: `${expense.description} (Cópia)`,
       date: getCurrentDateString(), // Set to today's date
     };
     setExpenses((prev: Expense[]) => [duplicatedExpense, ...prev]);
+
+    if (USE_REMOTE_STORAGE) {
+      void apiRequest("", {
+        method: "POST",
+        body: JSON.stringify(duplicatedExpense),
+      }).catch((error) => {
+        console.error("Failed to duplicate expense in Turso", error);
+      });
+    }
   };
 
   const bulkDuplicateExpenses = (expensesToDuplicate: Expense[], targetDate?: string, keepSameDay = false) => {
@@ -236,12 +359,21 @@ export function useExpensesStorage() {
       
       return {
         ...expense,
-        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${index}`,
+        id: `${generateId()}-${index}`,
         description: `${expense.description} (Cópia)`,
         date: dateToUse,
       };
     });
     setExpenses((prev: Expense[]) => [...duplicatedExpenses, ...prev]);
+
+    if (USE_REMOTE_STORAGE && duplicatedExpenses.length > 0) {
+      void apiRequest("/batch", {
+        method: "POST",
+        body: JSON.stringify(duplicatedExpenses),
+      }).catch((error) => {
+        console.error("Failed to duplicate expenses in Turso", error);
+      });
+    }
   };
 
   const addExpensesBatch = (expensesToAdd: ExpenseInput[]) => {
@@ -290,8 +422,18 @@ export function useExpensesStorage() {
       if (uniqueExpenses.length === 0) return prev;
       const expensesWithIds = uniqueExpenses.map((expense, index) => ({
         ...expense,
-        id: `${now}-${index}-${Math.random().toString(36).slice(2, 8)}`,
+        id: `${generateId()}-${now}-${index}`,
       }));
+
+      if (USE_REMOTE_STORAGE) {
+        void apiRequest("/batch", {
+          method: "POST",
+          body: JSON.stringify(expensesWithIds),
+        }).catch((error) => {
+          console.error("Failed to insert expenses batch in Turso", error);
+        });
+      }
+
       return [...expensesWithIds, ...(prev || [])];
     });
   };

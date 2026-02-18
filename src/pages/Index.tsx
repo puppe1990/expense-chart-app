@@ -2,8 +2,9 @@ import { useState } from "react";
 import { ExpenseForm, Category, Expense } from "@/components/ExpenseForm";
 import { ExpenseList } from "@/components/ExpenseList";
 import { SummaryCards } from "@/components/SummaryCards";
+import { FinancialHealthPanel } from "@/components/FinancialHealthPanel";
 import { EditTransactionDialog } from "@/components/EditTransactionDialog";
-import { Wallet, Download, Upload, Trash2, BarChart3, Calendar } from "lucide-react";
+import { Wallet, Download, Upload, Trash2, BarChart3, Calendar, LogOut } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { useExpensesStorage, useLocalStorage } from "@/hooks/use-local-storage";
@@ -39,8 +40,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ACCOUNT_OPTIONS, AccountType, filterExpensesByAccount } from "@/lib/accounts";
+import { useAuth } from "@/hooks/use-auth";
 
 const Index = () => {
+  const { user, signOut } = useAuth();
   const { expenses, addExpense, updateExpense, deleteExpense, clearExpenses, exportExpenses, importExpenses, duplicateExpense, addExpensesBatch } = useExpensesStorage();
   const [activeAccount, setActiveAccount] = useLocalStorage<AccountType>("expense-chart-account", "pf");
   const [categories] = useState<Category[]>(defaultCategories);
@@ -52,7 +55,7 @@ const Index = () => {
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
   const [isClearDialogOpen, setIsClearDialogOpen] = useState(false);
   const [importBank, setImportBank] = useState("c6");
-  const [importPassword, setImportPassword] = useState("023997");
+  const [importPassword, setImportPassword] = useState("");
   const [isImporting, setIsImporting] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -106,7 +109,7 @@ const Index = () => {
   };
 
   const handleExportExpenses = () => {
-    exportExpenses();
+    exportExpenses(activeAccount);
     toast.success("Dados exportados com sucesso!");
   };
 
@@ -336,12 +339,24 @@ const Index = () => {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={signOut}
+                className="flex items-center gap-2"
+                title={user?.email ?? "Sair"}
+              >
+                <LogOut className="h-4 w-4" />
+                Sair
+              </Button>
             </div>
           </div>
         </div>
       </header>
 
       <div className="container mx-auto px-4 py-8 max-w-7xl">
+        <FinancialHealthPanel expenses={expenses} />
 
         <SummaryCards expenses={accountExpenses} account={activeAccount} />
 

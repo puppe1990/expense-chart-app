@@ -8,7 +8,7 @@ import { Trash2, Receipt, CreditCard, FileText, Tag, RotateCcw, ArrowRightLeft, 
 import { Category, Expense } from "./ExpenseForm";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { parseDateString, cn } from "@/lib/utils";
 import {
   Popover,
@@ -48,9 +48,10 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
   const [categoryPopoverOpen, setCategoryPopoverOpen] = useState(false);
   const [paymentMethodPopoverOpen, setPaymentMethodPopoverOpen] = useState(false);
 
-  const getCategoryInfo = (categoryId: string) => {
-    return categories.find((cat) => cat.id === categoryId);
-  };
+  const getCategoryInfo = useCallback(
+    (categoryId: string) => categories.find((cat) => cat.id === categoryId),
+    [categories]
+  );
 
   const getCategoryLabel = () => {
     if (filters.category === "all") return "Todas";
@@ -252,7 +253,7 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
       
       return true;
     });
-  }, [expenses, searchQuery, filters, categories]);
+  }, [expenses, searchQuery, filters, getCategoryInfo]);
 
   // Pagination logic
   const totalPages = Math.max(1, Math.ceil(filteredExpenses.length / itemsPerPage));

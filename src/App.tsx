@@ -8,10 +8,13 @@ import Index from "./pages/Index";
 import Charts from "./pages/Charts";
 import DailyExpensesPage from "./pages/DailyExpenses";
 import NotFound from "./pages/NotFound";
+import AuthPage from "./pages/Auth";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
 import PWAUpdateNotification from "./components/PWAUpdateNotification";
 import OfflineIndicator from "./components/OfflineIndicator";
 import { usePWA } from "./hooks/usePWA";
+import { AuthProvider } from "./hooks/use-auth";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -42,9 +45,31 @@ const AppContent = () => {
       />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/charts" element={<Charts />} />
-          <Route path="/daily" element={<DailyExpensesPage />} />
+          <Route path="/auth" element={<AuthPage />} />
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <Index />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/charts"
+            element={
+              <ProtectedRoute>
+                <Charts />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/daily"
+            element={
+              <ProtectedRoute>
+                <DailyExpensesPage />
+              </ProtectedRoute>
+            }
+          />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
@@ -56,11 +81,13 @@ const AppContent = () => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <AppContent />
-    </TooltipProvider>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <AppContent />
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 
