@@ -40,6 +40,7 @@ import autoTable from 'jspdf-autotable';
 import { EditTransactionDialog } from './EditTransactionDialog';
 import { toast } from 'sonner';
 import { AccountType, getTransferImpact } from '@/lib/accounts';
+import { calculateFinancialTotals } from '@/lib/financial-metrics';
 
 interface DailyExpensesProps {
   expenses: Expense[];
@@ -112,11 +113,36 @@ export const DailyExpenses = ({ expenses, categories, account, onUpdateExpense, 
     return '';
   };
 
+  const getTransactionTypeLabel = (type: Expense['type']) => {
+    if (type === 'income') return 'Entrada';
+    if (type === 'expense') return 'Despesa';
+    if (type === 'transfer') return 'Transferência';
+    if (type === 'investment') return 'Investimento';
+    if (type === 'investment_profit') return 'Lucro';
+    if (type === 'loan') return 'Empréstimo';
+    return 'Outro';
+  };
+
+  const getCashDirection = (transaction: Expense): 'in' | 'out' | 'none' => {
+    if (transaction.type === 'transfer') {
+      const impact = getTransferImpact(transaction, account);
+      if (impact > 0) return 'in';
+      if (impact < 0) return 'out';
+      return 'none';
+    }
+    if (transaction.type === 'income' || transaction.type === 'investment_profit' || transaction.type === 'loan') {
+      return 'in';
+    }
+    if (transaction.type === 'expense' || transaction.type === 'investment') {
+      return 'out';
+    }
+    return 'none';
+  };
+
   // Agrupar despesas por dia
   const dailyExpenses = useMemo(() => {
     const grouped = expenses.reduce((acc, expense) => {
       const date = expense.date;
-      const transferImpact = getTransferImpact(expense, account);
       
       if (!acc[date]) {
         acc[date] = {
@@ -130,20 +156,21 @@ export const DailyExpenses = ({ expenses, categories, account, onUpdateExpense, 
       }
       
       acc[date].transactions.push(expense);
-      
-      if (expense.type === 'income' || expense.type === 'investment_profit') {
-        acc[date].totalIncome += expense.amount;
-      } else if (expense.type !== 'transfer') {
-        acc[date].totalExpense += expense.amount;
-      }
-      acc[date].transferImpact += transferImpact;
-      
-      acc[date].netAmount = acc[date].totalIncome - acc[date].totalExpense + acc[date].transferImpact;
-      
       return acc;
     }, {} as Record<string, DailyExpenseData>);
 
-    return Object.values(grouped).sort((a, b) => parseDateString(b.date).getTime() - parseDateString(a.date).getTime());
+    return Object.values(grouped)
+      .map((day) => {
+        const totals = calculateFinancialTotals(day.transactions, account);
+        return {
+          ...day,
+          totalIncome: totals.cashIn,
+          totalExpense: totals.cashOut,
+          transferImpact: totals.transferImpact,
+          netAmount: totals.netCashflow,
+        };
+      })
+      .sort((a, b) => parseDateString(b.date).getTime() - parseDateString(a.date).getTime());
   }, [expenses, account]);
 
   // Filtrar despesas do mês atual e criar dias vazios
@@ -371,7 +398,7 @@ export const DailyExpenses = ({ expenses, categories, account, onUpdateExpense, 
             'Método de Pagamento': '',
             'Entradas': day.totalIncome > 0 ? day.totalIncome.toFixed(2).replace('.', ',') : '',
             'Saídas': day.totalExpense > 0 ? day.totalExpense.toFixed(2).replace('.', ',') : '',
-            'Saldo': day.netAmount.toFixed(2).replace('.', ','),
+            'Fluxo de Caixa': day.netAmount.toFixed(2).replace('.', ','),
             'Observações': ''
           }
         ];
@@ -379,21 +406,17 @@ export const DailyExpenses = ({ expenses, categories, account, onUpdateExpense, 
         // Adicionar cada transação do dia
         const transactionsData = day.transactions.map(transaction => {
           const category = getCategoryById(transaction.category);
+          const cashDirection = getCashDirection(transaction);
           return {
             'Data': formatDisplayDate(day.date),
-            'Tipo': transaction.type === 'income' ? 'Entrada' :
-                   transaction.type === 'expense' ? 'Despesa' :
-                   transaction.type === 'transfer' ? 'Transferência' :
-                   transaction.type === 'investment' ? 'Investimento' :
-                   transaction.type === 'investment_profit' ? 'Lucro' :
-                   transaction.type === 'loan' ? 'Empréstimo' : 'Outro',
+            'Tipo': getTransactionTypeLabel(transaction.type),
             'Descrição': transaction.description,
             'Valor': transaction.amount.toFixed(2).replace('.', ','),
             'Categoria': category?.name || 'Não definida',
             'Método de Pagamento': transaction.paymentMethod || 'Não informado',
-            'Entradas': transaction.type === 'income' || transaction.type === 'investment_profit' ? transaction.amount.toFixed(2).replace('.', ',') : '',
-            'Saídas': transaction.type !== 'income' && transaction.type !== 'investment_profit' && transaction.type !== 'transfer' ? transaction.amount.toFixed(2).replace('.', ',') : '',
-            'Saldo': '',
+            'Entradas': cashDirection === 'in' ? transaction.amount.toFixed(2).replace('.', ',') : '',
+            'Saídas': cashDirection === 'out' ? transaction.amount.toFixed(2).replace('.', ',') : '',
+            'Fluxo de Caixa': '',
             'Observações': transaction.notes || ''
           };
         });
@@ -403,7 +426,7 @@ export const DailyExpenses = ({ expenses, categories, account, onUpdateExpense, 
       .flat();
 
     // Criar conteúdo CSV
-    const headers = ['Data', 'Tipo', 'Descrição', 'Valor', 'Categoria', 'Método de Pagamento', 'Entradas', 'Saídas', 'Saldo', 'Observações'];
+    const headers = ['Data', 'Tipo', 'Descrição', 'Valor', 'Categoria', 'Método de Pagamento', 'Entradas', 'Saídas', 'Fluxo de Caixa', 'Observações'];
     const csvContent = [
       headers.join(';'),
       ...csvData.map(row => headers.map(header => `"${row[header as keyof typeof row] || ''}"`).join(';'))
@@ -443,7 +466,7 @@ export const DailyExpenses = ({ expenses, categories, account, onUpdateExpense, 
             'Método de Pagamento': '',
             'Entradas': day.totalIncome > 0 ? day.totalIncome : '',
             'Saídas': day.totalExpense > 0 ? day.totalExpense : '',
-            'Saldo': day.netAmount,
+            'Fluxo de Caixa': day.netAmount,
             'Observações': ''
           }
         ];
@@ -451,21 +474,17 @@ export const DailyExpenses = ({ expenses, categories, account, onUpdateExpense, 
         // Adicionar cada transação do dia
         const transactionsData = day.transactions.map(transaction => {
           const category = getCategoryById(transaction.category);
+          const cashDirection = getCashDirection(transaction);
           return {
             'Data': formatDisplayDate(day.date),
-            'Tipo': transaction.type === 'income' ? 'Entrada' :
-                   transaction.type === 'expense' ? 'Despesa' :
-                   transaction.type === 'transfer' ? 'Transferência' :
-                   transaction.type === 'investment' ? 'Investimento' :
-                   transaction.type === 'investment_profit' ? 'Lucro' :
-                   transaction.type === 'loan' ? 'Empréstimo' : 'Outro',
+            'Tipo': getTransactionTypeLabel(transaction.type),
             'Descrição': transaction.description,
             'Valor': transaction.amount,
             'Categoria': category?.name || 'Não definida',
             'Método de Pagamento': transaction.paymentMethod || 'Não informado',
-            'Entradas': transaction.type === 'income' || transaction.type === 'investment_profit' ? transaction.amount : '',
-            'Saídas': transaction.type !== 'income' && transaction.type !== 'investment_profit' && transaction.type !== 'transfer' ? transaction.amount : '',
-            'Saldo': '',
+            'Entradas': cashDirection === 'in' ? transaction.amount : '',
+            'Saídas': cashDirection === 'out' ? transaction.amount : '',
+            'Fluxo de Caixa': '',
             'Observações': transaction.notes || ''
           };
         });
@@ -488,7 +507,7 @@ export const DailyExpenses = ({ expenses, categories, account, onUpdateExpense, 
       { wch: 20 }, // Método de Pagamento
       { wch: 12 }, // Entradas
       { wch: 12 }, // Saídas
-      { wch: 12 }, // Saldo
+      { wch: 16 }, // Fluxo de Caixa
       { wch: 30 }  // Observações
     ];
     worksheet['!cols'] = columnWidths;
@@ -539,7 +558,7 @@ export const DailyExpenses = ({ expenses, categories, account, onUpdateExpense, 
     pdf.text('Resumo do Mês:', 20, 45);
     pdf.text(`Entradas: R$ ${monthTotals.totalIncome.toFixed(2).replace('.', ',')}`, 20, 52);
     pdf.text(`Saídas: R$ ${monthTotals.totalExpense.toFixed(2).replace('.', ',')}`, 20, 59);
-    pdf.text(`Saldo: R$ ${monthTotals.netAmount.toFixed(2).replace('.', ',')}`, 20, 66);
+    pdf.text(`Fluxo de Caixa: R$ ${monthTotals.netAmount.toFixed(2).replace('.', ',')}`, 20, 66);
     
     // Preparar dados para a tabela
     const tableData = currentMonthExpenses
@@ -561,12 +580,8 @@ export const DailyExpenses = ({ expenses, categories, account, onUpdateExpense, 
         
         const transactionsData = day.transactions.map(transaction => {
           const category = getCategoryById(transaction.category);
-          const typeLabel = transaction.type === 'income' ? 'Entrada' :
-                           transaction.type === 'expense' ? 'Despesa' :
-                           transaction.type === 'transfer' ? 'Transferência' :
-                           transaction.type === 'investment' ? 'Investimento' :
-                           transaction.type === 'investment_profit' ? 'Lucro' :
-                           transaction.type === 'loan' ? 'Empréstimo' : 'Outro';
+          const typeLabel = getTransactionTypeLabel(transaction.type);
+          const cashDirection = getCashDirection(transaction);
           
           return [
             formatDisplayDate(day.date),
@@ -574,8 +589,8 @@ export const DailyExpenses = ({ expenses, categories, account, onUpdateExpense, 
             transaction.description || '',
             `R$ ${transaction.amount.toFixed(2).replace('.', ',')}`,
             category?.name || 'Não definida',
-            transaction.type === 'income' || transaction.type === 'investment_profit' ? `R$ ${transaction.amount.toFixed(2).replace('.', ',')}` : '',
-            transaction.type !== 'income' && transaction.type !== 'investment_profit' && transaction.type !== 'transfer' ? `R$ ${transaction.amount.toFixed(2).replace('.', ',')}` : '',
+            cashDirection === 'in' ? `R$ ${transaction.amount.toFixed(2).replace('.', ',')}` : '',
+            cashDirection === 'out' ? `R$ ${transaction.amount.toFixed(2).replace('.', ',')}` : '',
             '',
             transaction.notes || ''
           ];
@@ -585,7 +600,7 @@ export const DailyExpenses = ({ expenses, categories, account, onUpdateExpense, 
       });
     
     // Cabeçalhos da tabela
-    const headers = ['Data', 'Tipo', 'Descrição', 'Valor', 'Categoria', 'Entradas', 'Saídas', 'Saldo', 'Observações'];
+    const headers = ['Data', 'Tipo', 'Descrição', 'Valor', 'Categoria', 'Entradas', 'Saídas', 'Fluxo de Caixa', 'Observações'];
     
     // Configurar a tabela
     const tableConfig = {
@@ -638,12 +653,7 @@ export const DailyExpenses = ({ expenses, categories, account, onUpdateExpense, 
           pdf.setFontSize(9);
           day.transactions.forEach(transaction => {
             const category = getCategoryById(transaction.category);
-            const typeLabel = transaction.type === 'income' ? 'Entrada' :
-                             transaction.type === 'expense' ? 'Despesa' :
-                             transaction.type === 'transfer' ? 'Transferência' :
-                             transaction.type === 'investment' ? 'Investimento' :
-                             transaction.type === 'investment_profit' ? 'Lucro' :
-                             transaction.type === 'loan' ? 'Empréstimo' : 'Outro';
+            const typeLabel = getTransactionTypeLabel(transaction.type);
             
             pdf.text(`  • ${typeLabel}: ${transaction.description} - R$ ${transaction.amount.toFixed(2).replace('.', ',')} (${category?.name || 'Não definida'})`, 25, yPosition);
             yPosition += 7;
@@ -820,7 +830,7 @@ export const DailyExpenses = ({ expenses, categories, account, onUpdateExpense, 
                     ? 'text-blue-700 dark:text-blue-300' 
                     : 'text-orange-700 dark:text-orange-300'
                 }`}>
-                  Saldo
+                  Fluxo de Caixa
                 </span>
               </div>
               <div className={`text-2xl font-bold ${
@@ -918,12 +928,7 @@ export const DailyExpenses = ({ expenses, categories, account, onUpdateExpense, 
                                 <div className="text-sm text-gray-500 flex items-center gap-2">
                                   <span>{category?.icon} {category?.name}</span>
                                   <Badge variant="outline" className="text-xs">
-                                    {transaction.type === 'income' ? 'Entrada' :
-                                     transaction.type === 'expense' ? 'Despesa' :
-                                     transaction.type === 'transfer' ? 'Transferência' :
-                                     transaction.type === 'investment' ? 'Investimento' :
-                                     transaction.type === 'investment_profit' ? 'Lucro' :
-                                     transaction.type === 'loan' ? 'Empréstimo' : 'Outro'}
+                                    {getTransactionTypeLabel(transaction.type)}
                                   </Badge>
                                 </div>
                               </div>
@@ -932,13 +937,13 @@ export const DailyExpenses = ({ expenses, categories, account, onUpdateExpense, 
                               <div className={`font-semibold ${
                                 transaction.type === 'transfer'
                                   ? 'text-blue-600'
-                                  : transaction.type === 'income' || transaction.type === 'investment_profit'
+                                  : getCashDirection(transaction) === 'in'
                                     ? 'text-green-600' 
                                     : 'text-red-600'
                               }`}>
                                 {transaction.type === 'transfer'
                                   ? getTransferSign(transaction)
-                                  : transaction.type === 'income' || transaction.type === 'investment_profit'
+                                  : getCashDirection(transaction) === 'in'
                                     ? '+'
                                     : '-'}
                                 {formatCurrency(transaction.amount)}

@@ -11,10 +11,7 @@ export function cn(...inputs: ClassValue[]) {
  * @returns true se a data for futura, false caso contrário
  */
 export function isFutureDate(dateString: string): boolean {
-  const today = new Date();
-  const todayString = today.toISOString().split('T')[0]; // YYYY-MM-DD
-  
-  return dateString > todayString;
+  return dateString > getCurrentDateString();
 }
 
 /**

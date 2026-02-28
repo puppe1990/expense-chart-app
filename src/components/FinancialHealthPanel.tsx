@@ -2,8 +2,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Building2, User, AlertTriangle, ShieldCheck } from "lucide-react";
 import type { Expense } from "@/components/ExpenseForm";
-import { AccountType, filterExpensesByAccount, getTransferImpact } from "@/lib/accounts";
+import { AccountType, filterExpensesByAccount } from "@/lib/accounts";
 import { getCurrentDateString } from "@/lib/utils";
+import { calculateFinancialTotals } from "@/lib/financial-metrics";
 
 interface FinancialHealthPanelProps {
   expenses: Expense[];
@@ -27,28 +28,7 @@ const getMonthBalanceByAccount = (expenses: Expense[], account: AccountType, tod
     isInCurrentMonth(expense.date, today)
   );
 
-  const totalIncome = monthExpenses
-    .filter((e) => e.type === "income")
-    .reduce((sum, expense) => sum + expense.amount, 0);
-
-  const totalExpenses = monthExpenses
-    .filter((e) => e.type === "expense")
-    .reduce((sum, expense) => sum + expense.amount, 0);
-
-  const totalInvestments = monthExpenses
-    .filter((e) => e.type === "investment")
-    .reduce((sum, expense) => sum + expense.amount, 0);
-
-  const totalProfit = monthExpenses
-    .filter((e) => e.type === "investment_profit")
-    .reduce((sum, expense) => sum + expense.amount, 0);
-
-  const transferImpact = monthExpenses.reduce(
-    (sum, expense) => sum + getTransferImpact(expense, account),
-    0
-  );
-
-  return totalIncome + totalProfit - totalExpenses - totalInvestments + transferImpact;
+  return calculateFinancialTotals(monthExpenses, account).netCashflow;
 };
 
 export const FinancialHealthPanel = ({ expenses }: FinancialHealthPanelProps) => {

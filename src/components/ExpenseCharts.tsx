@@ -17,6 +17,9 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
     const categoryTotals: { [key: string]: number } = {};
     
     currentAndPastExpenses.forEach((expense) => {
+      if (expense.type !== "expense" && expense.type !== "investment") {
+        return;
+      }
       if (categoryTotals[expense.category]) {
         categoryTotals[expense.category] += expense.amount;
       } else {
@@ -42,6 +45,7 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
         expense: number;
         investment: number;
         profit: number;
+        loan: number;
         net: number;
       };
     } = {};
@@ -52,7 +56,7 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
       const monthLabel = date.toLocaleString("pt-BR", { month: "short", year: "numeric" });
       
       if (!monthlyData[monthKey]) {
-        monthlyData[monthKey] = { label: monthLabel, income: 0, expense: 0, investment: 0, profit: 0, net: 0 };
+        monthlyData[monthKey] = { label: monthLabel, income: 0, expense: 0, investment: 0, profit: 0, loan: 0, net: 0 };
       }
       
       switch (expense.type) {
@@ -68,6 +72,9 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
         case "investment_profit":
           monthlyData[monthKey].profit += expense.amount;
           break;
+        case "loan":
+          monthlyData[monthKey].loan += expense.amount;
+          break;
       }
     });
 
@@ -79,8 +86,9 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
         expense: data.expense,
         investment: data.investment,
         profit: data.profit,
-        net: data.income + data.profit - data.expense - data.investment,
-        total: data.income + data.expense + data.investment + data.profit,
+        loan: data.loan,
+        net: data.income + data.profit + data.loan - data.expense - data.investment,
+        total: data.income + data.expense + data.investment + data.profit + data.loan,
       }))
       .sort((a, b) => a.monthKey.localeCompare(b.monthKey));
   };
@@ -124,9 +132,9 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
         weeklyTotals[weekKey] = { income: 0, expense: 0, net: 0 };
       }
       
-      if (expense.type === "income" || expense.type === "investment_profit") {
+      if (expense.type === "income" || expense.type === "investment_profit" || expense.type === "loan") {
         weeklyTotals[weekKey].income += expense.amount;
-      } else {
+      } else if (expense.type === "expense" || expense.type === "investment") {
         weeklyTotals[weekKey].expense += expense.amount;
       }
     });
@@ -149,7 +157,8 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
       const typeName = expense.type === "income" ? "Receitas" : 
                       expense.type === "expense" ? "Despesas" :
                       expense.type === "investment" ? "Investimentos" :
-                      expense.type === "investment_profit" ? "Lucros" : "Outros";
+                      expense.type === "investment_profit" ? "Lucros" :
+                      expense.type === "loan" ? "Empréstimos" : "Outros";
       
       if (typeTotals[typeName]) {
         typeTotals[typeName] += expense.amount;
@@ -164,7 +173,8 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
       color: type === "Receitas" ? "#10b981" :
              type === "Despesas" ? "#ef4444" :
              type === "Investimentos" ? "#8b5cf6" :
-             type === "Lucros" ? "#059669" : "#64748b"
+             type === "Lucros" ? "#059669" :
+             type === "Empréstimos" ? "#f97316" : "#64748b"
     }));
   };
 
@@ -241,7 +251,7 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
               <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg">
                 <PieChartIcon className="h-5 w-5 text-white" />
               </div>
-              Distribuição por Categoria
+              Distribuição de Saídas por Categoria
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -298,6 +308,10 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
                     <stop offset="0%" stopColor="#f59e0b" />
                     <stop offset="100%" stopColor="#d97706" />
                   </linearGradient>
+                  <linearGradient id="loanGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#f97316" />
+                    <stop offset="100%" stopColor="#ea580c" />
+                  </linearGradient>
                   <linearGradient id="netGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#3b82f6" />
                     <stop offset="100%" stopColor="#1d4ed8" />
@@ -313,7 +327,8 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
                     name === 'expense' ? 'Despesas' :
                     name === 'investment' ? 'Investimentos' :
                     name === 'profit' ? 'Lucros' :
-                    name === 'net' ? 'Saldo Líquido' : name
+                    name === 'loan' ? 'Empréstimos' :
+                    name === 'net' ? 'Fluxo de Caixa' : name
                   ]}
                   contentStyle={{ 
                     backgroundColor: 'white', 
@@ -327,7 +342,8 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
                 <Bar dataKey="expense" name="Despesas" fill="url(#expenseGradient)" radius={[2, 2, 0, 0]} />
                 <Bar dataKey="investment" name="Investimentos" fill="url(#investmentGradient)" radius={[2, 2, 0, 0]} />
                 <Bar dataKey="profit" name="Lucros" fill="url(#profitGradient)" radius={[2, 2, 0, 0]} />
-                <Bar dataKey="net" name="Saldo Líquido" fill="url(#netGradient)" radius={[2, 2, 0, 0]} />
+                <Bar dataKey="loan" name="Empréstimos" fill="url(#loanGradient)" radius={[2, 2, 0, 0]} />
+                <Bar dataKey="net" name="Fluxo de Caixa" fill="url(#netGradient)" radius={[2, 2, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>

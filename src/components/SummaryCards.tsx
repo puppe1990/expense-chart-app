@@ -2,7 +2,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { TrendingDown, TrendingUp, Wallet, TrendingUp as InvestmentIcon, CreditCard } from "lucide-react";
 import { Expense } from "./ExpenseForm";
 import { filterNonFutureExpenses } from "@/lib/utils";
-import { AccountType, getTransferImpact } from "@/lib/accounts";
+import { AccountType } from "@/lib/accounts";
+import { calculateFinancialTotals } from "@/lib/financial-metrics";
 
 interface SummaryCardsProps {
   expenses: Expense[];
@@ -20,44 +21,16 @@ export const SummaryCards = ({ expenses, account }: SummaryCardsProps) => {
   // Filtrar apenas transações do dia atual ou anteriores
   const currentAndPastExpenses = filterNonFutureExpenses(expenses);
 
-  const totalIncome = currentAndPastExpenses
-    .filter((e) => e.type === "income")
-    .reduce((sum, expense) => sum + expense.amount, 0);
-  
-  const totalExpenses = currentAndPastExpenses
-    .filter((e) => e.type === "expense")
-    .reduce((sum, expense) => sum + expense.amount, 0);
-
-  const totalInvestments = currentAndPastExpenses
-    .filter((e) => e.type === "investment")
-    .reduce((sum, expense) => sum + expense.amount, 0);
-
-  const totalInvestmentProfits = currentAndPastExpenses
-    .filter((e) => e.type === "investment_profit")
-    .reduce((sum, expense) => sum + expense.amount, 0);
-
-
-  const totalLoans = currentAndPastExpenses
-    .filter((e) => e.type === "loan")
-    .reduce((sum, expense) => sum + expense.amount, 0);
-
-  // Calculate loan payments
-  const totalLoanPayments = currentAndPastExpenses
-    .filter((e) => e.type === "expense" && e.isLoanPayment)
-    .reduce((sum, expense) => sum + expense.amount, 0);
-
-  // Calculate remaining loan balance
-  const remainingLoanBalance = totalLoans - totalLoanPayments;
-
-  const transferImpact = currentAndPastExpenses.reduce(
-    (sum, expense) => sum + getTransferImpact(expense, account),
-    0
-  );
-
-  // Transfers don't count as income/expense, but affect the account balance
-  // Investment profits are considered income for balance calculation
-  // Investments should be subtracted from balance as they represent money leaving the account
-  const balance = totalIncome + totalInvestmentProfits - totalExpenses - totalInvestments + transferImpact;
+  const {
+    totalIncome,
+    totalExpenses,
+    totalInvestments,
+    totalInvestmentProfits,
+    totalLoans,
+    totalLoanPayments,
+    remainingLoanBalance,
+    netCashflow,
+  } = calculateFinancialTotals(currentAndPastExpenses, account);
 
   return (
     <div className="space-y-6 mb-8">
@@ -108,17 +81,17 @@ export const SummaryCards = ({ expenses, account }: SummaryCardsProps) => {
         </Card>
 
         <Card className={`group relative overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 border-0 hover:scale-105 md:col-span-2 xl:col-span-1 ${
-          balance >= 0 
+          netCashflow >= 0 
             ? 'bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/50 dark:to-blue-900/30' 
             : 'bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/50 dark:to-orange-900/30'
         }`}>
           <div className={`absolute inset-0 ${
-            balance >= 0 
+            netCashflow >= 0 
               ? 'bg-gradient-to-br from-blue-500/10 to-transparent' 
               : 'bg-gradient-to-br from-orange-500/10 to-transparent'
           }`}></div>
           <div className={`absolute top-0 right-0 w-32 h-32 ${
-            balance >= 0 
+            netCashflow >= 0 
               ? 'bg-gradient-to-br from-blue-400/20 to-transparent' 
               : 'bg-gradient-to-br from-orange-400/20 to-transparent'
           } rounded-full -translate-y-16 translate-x-16`}></div>
@@ -126,30 +99,30 @@ export const SummaryCards = ({ expenses, account }: SummaryCardsProps) => {
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <p className={`text-xs font-semibold uppercase tracking-wide ${
-                  balance >= 0 
+                  netCashflow >= 0 
                     ? 'text-blue-700 dark:text-blue-300' 
                     : 'text-orange-700 dark:text-orange-300'
-                }`}>Saldo Atual</p>
+                }`}>Fluxo de Caixa</p>
                 <p className={`text-2xl font-black ${
-                  balance >= 0 
+                  netCashflow >= 0 
                     ? 'text-blue-900 dark:text-blue-100' 
                     : 'text-orange-900 dark:text-orange-100'
                 }`}>
-                  {formatCurrency(balance)}
+                  {formatCurrency(netCashflow)}
                 </p>
                 <div className={`flex items-center gap-1 ${
-                  balance >= 0 
+                  netCashflow >= 0 
                     ? 'text-blue-600 dark:text-blue-400' 
                     : 'text-orange-600 dark:text-orange-400'
                 }`}>
                   <Wallet className="h-3 w-3" />
                   <span className="text-xs font-medium">
-                    {balance >= 0 ? 'Positivo' : 'Negativo'}
+                    {netCashflow >= 0 ? 'Positivo' : 'Negativo'}
                   </span>
                 </div>
               </div>
               <div className={`p-4 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300 ${
-                balance >= 0 
+                netCashflow >= 0 
                   ? 'bg-gradient-to-br from-blue-500 to-blue-600' 
                   : 'bg-gradient-to-br from-orange-500 to-orange-600'
               }`}>

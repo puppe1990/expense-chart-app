@@ -5,11 +5,11 @@ import { ArrowLeft, BarChart3, TrendingUp, DollarSign, Calendar, Filter } from "
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
-import { filterNonFutureExpenses } from "@/lib/utils";
+import { filterNonFutureExpenses, parseDateString } from "@/lib/utils";
 import { defaultCategories } from "@/data/categories";
 import { ACCOUNT_OPTIONS, AccountType, filterExpensesByAccount } from "@/lib/accounts";
+import { calculateFinancialTotals } from "@/lib/financial-metrics";
 
 const Charts = () => {
   const { expenses } = useExpensesStorage();
@@ -39,7 +39,7 @@ const Charts = () => {
           break;
       }
       
-      filtered = filtered.filter(expense => new Date(expense.date) >= filterDate);
+      filtered = filtered.filter(expense => parseDateString(expense.date) >= filterDate);
     }
     
     if (chartType !== "all") {
@@ -54,38 +54,13 @@ const Charts = () => {
   const filteredExpenses = getFilteredExpenses();
 
   const getFinancialSummary = () => {
-    let totalIncome = 0;
-    let totalExpense = 0;
-    let totalInvestment = 0;
-    let totalProfit = 0;
-    
-    filteredExpenses.forEach((expense) => {
-      switch (expense.type) {
-        case "income":
-          totalIncome += expense.amount;
-          break;
-        case "expense":
-          totalExpense += expense.amount;
-          break;
-        case "investment":
-          totalInvestment += expense.amount;
-          break;
-        case "investment_profit":
-          totalProfit += expense.amount;
-          break;
-      }
-    });
-
-    const netWorth = totalIncome + totalProfit - totalExpense - totalInvestment;
+    const totals = calculateFinancialTotals(filteredExpenses, activeAccount);
     const totalTransactions = filteredExpenses.length;
-    const averageTransaction = totalTransactions > 0 ? (totalIncome + totalExpense + totalInvestment + totalProfit) / totalTransactions : 0;
+    const averageTransaction =
+      totalTransactions > 0 ? (totals.cashIn + totals.cashOut) / totalTransactions : 0;
 
     return {
-      totalIncome,
-      totalExpense,
-      totalInvestment,
-      totalProfit,
-      netWorth,
+      ...totals,
       totalTransactions,
       averageTransaction
     };
@@ -95,6 +70,9 @@ const Charts = () => {
     const categoryTotals: { [key: string]: number } = {};
     
     filteredExpenses.forEach((expense) => {
+      if (expense.type !== "expense" && expense.type !== "investment") {
+        return;
+      }
       if (categoryTotals[expense.category]) {
         categoryTotals[expense.category] += expense.amount;
       } else {
@@ -225,10 +203,10 @@ const Charts = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-emerald-100 text-sm font-medium">Receitas Totais</p>
-                  <p className="text-2xl font-bold">{formatCurrency(financialSummary.totalIncome + financialSummary.totalProfit)}</p>
+                  <p className="text-emerald-100 text-sm font-medium">Entradas (Operacionais)</p>
+                  <p className="text-2xl font-bold">{formatCurrency(financialSummary.totalIncome + financialSummary.totalInvestmentProfits)}</p>
                   <p className="text-xs text-emerald-200 mt-1">
-                    {formatCurrency(financialSummary.totalIncome)} + {formatCurrency(financialSummary.totalProfit)} lucros
+                    {formatCurrency(financialSummary.totalIncome)} + {formatCurrency(financialSummary.totalInvestmentProfits)} lucros
                   </p>
                 </div>
                 <TrendingUp className="h-8 w-8 text-emerald-200" />
@@ -240,10 +218,10 @@ const Charts = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-red-100 text-sm font-medium">Despesas Totais</p>
-                  <p className="text-2xl font-bold">{formatCurrency(financialSummary.totalExpense + financialSummary.totalInvestment)}</p>
+                  <p className="text-red-100 text-sm font-medium">Saídas Totais</p>
+                  <p className="text-2xl font-bold">{formatCurrency(financialSummary.totalExpenses + financialSummary.totalInvestments)}</p>
                   <p className="text-xs text-red-200 mt-1">
-                    {formatCurrency(financialSummary.totalExpense)} + {formatCurrency(financialSummary.totalInvestment)} investimentos
+                    {formatCurrency(financialSummary.totalExpenses)} + {formatCurrency(financialSummary.totalInvestments)} investimentos
                   </p>
                 </div>
                 <DollarSign className="h-8 w-8 text-red-200" />
@@ -251,22 +229,22 @@ const Charts = () => {
             </CardContent>
           </Card>
 
-          <Card className={`border-0 shadow-lg text-white ${financialSummary.netWorth >= 0 
+          <Card className={`border-0 shadow-lg text-white ${financialSummary.netCashflow >= 0 
             ? 'bg-gradient-to-br from-blue-500 to-blue-600' 
             : 'bg-gradient-to-br from-orange-500 to-orange-600'
           }`}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className={`text-sm font-medium ${financialSummary.netWorth >= 0 ? 'text-blue-100' : 'text-orange-100'}`}>
-                    Saldo Líquido
+                  <p className={`text-sm font-medium ${financialSummary.netCashflow >= 0 ? 'text-blue-100' : 'text-orange-100'}`}>
+                    Fluxo de Caixa
                   </p>
-                  <p className="text-2xl font-bold">{formatCurrency(financialSummary.netWorth)}</p>
-                  <p className={`text-xs mt-1 ${financialSummary.netWorth >= 0 ? 'text-blue-200' : 'text-orange-200'}`}>
-                    {financialSummary.netWorth >= 0 ? '💰 Positivo' : '⚠️ Negativo'}
+                  <p className="text-2xl font-bold">{formatCurrency(financialSummary.netCashflow)}</p>
+                  <p className={`text-xs mt-1 ${financialSummary.netCashflow >= 0 ? 'text-blue-200' : 'text-orange-200'}`}>
+                    {financialSummary.netCashflow >= 0 ? '💰 Positivo' : '⚠️ Negativo'}
                   </p>
                 </div>
-                <BarChart3 className={`h-8 w-8 ${financialSummary.netWorth >= 0 ? 'text-blue-200' : 'text-orange-200'}`} />
+                <BarChart3 className={`h-8 w-8 ${financialSummary.netCashflow >= 0 ? 'text-blue-200' : 'text-orange-200'}`} />
               </div>
             </CardContent>
           </Card>
@@ -275,10 +253,10 @@ const Charts = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-purple-100 text-sm font-medium">Transações</p>
-                  <p className="text-2xl font-bold">{financialSummary.totalTransactions}</p>
+                  <p className="text-purple-100 text-sm font-medium">Passivo (Empréstimos)</p>
+                  <p className="text-2xl font-bold">{formatCurrency(financialSummary.remainingLoanBalance)}</p>
                   <p className="text-xs text-purple-200 mt-1">
-                    Média: {formatCurrency(financialSummary.averageTransaction)}
+                    Empréstimos: {formatCurrency(financialSummary.totalLoans)} | Média: {formatCurrency(financialSummary.averageTransaction)}
                   </p>
                 </div>
                 <div className="text-2xl">{topCategory?.icon || "📊"}</div>

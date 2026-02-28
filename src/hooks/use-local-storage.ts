@@ -107,6 +107,29 @@ const isNonFutureDateString = (dateString: string): boolean => {
   return dateString <= getCurrentDateString();
 };
 
+const isAccountType = (value: unknown): value is AccountType =>
+  value === "pf" || value === "pj" || value === "card";
+
+const hasValidTransactionShape = (expense: Partial<ExpenseInput>): boolean => {
+  if (expense.type === "transfer") {
+    return (
+      isAccountType(expense.fromAccount) &&
+      isAccountType(expense.toAccount) &&
+      expense.fromAccount !== expense.toAccount
+    );
+  }
+
+  if (expense.account !== undefined && !isAccountType(expense.account)) {
+    return false;
+  }
+
+  if (expense.isLoanPayment && !expense.relatedLoanId) {
+    return false;
+  }
+
+  return true;
+};
+
 const apiRequest = async <T>(path = "", init?: RequestInit): Promise<T> => {
   const response = await fetch(`${EXPENSES_API_BASE}${path}`, {
     headers: {
@@ -260,7 +283,14 @@ export function useExpensesStorage() {
   const isExpenseRecord = (value: unknown): value is Expense => {
     if (!value || typeof value !== "object") return false;
     const record = value as Record<string, unknown>;
-    const account = record.account as string | undefined;
+    const mappedRecord = {
+      type: record.type as Expense["type"],
+      account: record.account as AccountType | undefined,
+      fromAccount: record.fromAccount as AccountType | undefined,
+      toAccount: record.toAccount as AccountType | undefined,
+      isLoanPayment: Boolean(record.isLoanPayment),
+      relatedLoanId: record.relatedLoanId as string | undefined,
+    };
     return (
       typeof record.id === "string" &&
       typeof record.description === "string" &&
@@ -271,7 +301,7 @@ export function useExpensesStorage() {
       isNonFutureDateString(record.date as string) &&
       typeof record.type === "string" &&
       validTypes.includes(record.type as Expense["type"]) &&
-      (account === undefined || account === "pf" || account === "pj" || account === "card")
+      hasValidTransactionShape(mappedRecord)
     );
   };
 
@@ -283,6 +313,10 @@ export function useExpensesStorage() {
     }
     if (!dateRegex.test(normalizedExpense.date) || !isNonFutureDateString(normalizedExpense.date)) {
       console.error("Invalid expense date:", normalizedExpense.date);
+      return;
+    }
+    if (!hasValidTransactionShape(normalizedExpense)) {
+      console.error("Invalid expense transaction shape:", normalizedExpense);
       return;
     }
 
@@ -309,6 +343,10 @@ export function useExpensesStorage() {
     }
     if (!dateRegex.test(updatedExpense.date) || !isNonFutureDateString(updatedExpense.date)) {
       console.error("Invalid expense date:", updatedExpense.date);
+      return;
+    }
+    if (!hasValidTransactionShape(updatedExpense)) {
+      console.error("Invalid expense transaction shape:", updatedExpense);
       return;
     }
 
@@ -490,7 +528,11 @@ export function useExpensesStorage() {
 
     const validExpenses = normalizedExpenses.filter((expense) => {
       if (!isValidAmount(expense.amount)) return false;
-      return dateRegex.test(expense.date) && isNonFutureDateString(expense.date);
+      return (
+        dateRegex.test(expense.date) &&
+        isNonFutureDateString(expense.date) &&
+        hasValidTransactionShape(expense)
+      );
     });
 
     if (validExpenses.length === 0) {
