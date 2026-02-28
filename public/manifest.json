@@ -1,11 +1,11 @@
 {
-  "name": "Expense Tracker Pro",
-  "short_name": "ExpenseTracker",
-  "description": "Aplicativo inteligente de controle de gastos pessoais com gráficos dinâmicos e categorização de despesas",
+  "name": "Controle Financeiro",
+  "short_name": "Financeiro",
+  "description": "Aplicativo de controle financeiro pessoal com gráficos e gestão de despesas",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#1d4ed8",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
   "orientation": "portrait-primary",
   "scope": "/",
   "lang": "pt-BR",
@@ -32,54 +32,6 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
-    },
-    {
-      "src": "/logo.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "/screenshot-wide.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "Expense Tracker Pro Dashboard"
-    },
-    {
-      "src": "/screenshot-narrow.png",
-      "sizes": "750x1334",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Expense Tracker Pro Mobile View"
-    }
-  ],
-  "shortcuts": [
-    {
-      "name": "Adicionar Despesa",
-      "short_name": "Nova Despesa",
-      "description": "Adicionar uma nova despesa rapidamente",
-      "url": "/?action=add-expense",
-      "icons": [
-        {
-          "src": "/shortcut-expense.png",
-          "sizes": "96x96"
-        }
-      ]
-    },
-    {
-      "name": "Ver Gráficos",
-      "short_name": "Gráficos",
-      "description": "Visualizar gráficos de gastos",
-      "url": "/charts",
-      "icons": [
-        {
-          "src": "/shortcut-charts.png",
-          "sizes": "96x96"
-        }
-      ]
     }
   ],
   "related_applications": [],

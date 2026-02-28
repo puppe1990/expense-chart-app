@@ -1,6 +1,6 @@
-const CACHE_NAME = 'expense-tracker-pro-v1.0.1';
-const STATIC_CACHE_NAME = 'expense-tracker-static-v1.0.1';
-const DYNAMIC_CACHE_NAME = 'expense-tracker-dynamic-v1.0.1';
+const CACHE_NAME = 'expense-tracker-pro-v1.0.4';
+const STATIC_CACHE_NAME = 'expense-tracker-static-v1.0.4';
+const DYNAMIC_CACHE_NAME = 'expense-tracker-dynamic-v1.0.4';
 
 // Files to cache for offline functionality
 const STATIC_FILES = [
@@ -8,12 +8,10 @@ const STATIC_FILES = [
   '/index.html',
   '/manifest.json',
   '/favicon.ico',
-  '/favicon.svg',
   '/favicon-16x16.png',
   '/favicon-32x32.png',
   '/pwa-192x192.png',
-  '/pwa-512x512.png',
-  '/logo.svg'
+  '/pwa-512x512.png'
 ];
 
 // Install event - cache static files
@@ -130,7 +128,7 @@ self.addEventListener('fetch', (event) => {
             
             // Return a custom offline response for API requests
             if (url.includes('/api/')) {
-              return new Response(
+      return new Response(
                 JSON.stringify({
                   error: 'Offline',
                   message: 'Você está offline. Algumas funcionalidades podem estar limitadas.',
@@ -186,7 +184,7 @@ self.addEventListener('push', (event) => {
   console.log('Service Worker: Push notification received');
   
   const options = {
-    body: event.data ? event.data.text() : 'Nova notificação do Expense Tracker Pro',
+    body: event.data ? event.data.text() : 'Nova notificação do Controle Financeiro',
     icon: '/pwa-192x192.png',
     badge: '/favicon-32x32.png',
     vibrate: [100, 50, 100],
@@ -209,7 +207,7 @@ self.addEventListener('push', (event) => {
   };
 
   event.waitUntil(
-    self.registration.showNotification('Expense Tracker Pro', options)
+    self.registration.showNotification('Controle Financeiro', options)
   );
 });
 
