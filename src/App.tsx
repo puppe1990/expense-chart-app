@@ -7,6 +7,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Charts from "./pages/Charts";
 import DailyExpensesPage from "./pages/DailyExpenses";
+import MonthlyResultPage from "./pages/MonthlyResult";
+import LoansPage from "./pages/Loans";
 import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/Auth";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
@@ -58,6 +60,8 @@ const AppContent = () => {
             <Route path="/" element={<Index />} />
             <Route path="/charts" element={<Charts />} />
             <Route path="/daily" element={<DailyExpensesPage />} />
+            <Route path="/resultado-mensal" element={<MonthlyResultPage />} />
+            <Route path="/emprestimos" element={<LoansPage />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

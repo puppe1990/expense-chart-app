@@ -2,9 +2,6 @@ import { useState } from "react";
 import { ExpenseForm, Category, Expense } from "@/components/ExpenseForm";
 import { ExpenseList } from "@/components/ExpenseList";
 import { SummaryCards } from "@/components/SummaryCards";
-import { FinancialHealthPanel } from "@/components/FinancialHealthPanel";
-import { MonthlyDrePanel } from "@/components/MonthlyDrePanel";
-import { LoansSection } from "@/components/LoansSection";
 import { CodexAssistant } from "@/components/CodexAssistant";
 import { EditTransactionDialog } from "@/components/EditTransactionDialog";
 import { Download, Upload, Trash2 } from "lucide-react";
@@ -318,12 +315,9 @@ const Index = () => {
               </Dialog>
       </div>
 
-      <FinancialHealthPanel expenses={expenses} />
-      <MonthlyDrePanel expenses={expenses} />
       <CodexAssistant />
 
       <SummaryCards expenses={accountExpenses} account={activeAccount} />
-      <LoansSection expenses={accountExpenses} />
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-1">

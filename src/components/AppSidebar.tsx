@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Wallet, LayoutDashboard, BarChart3, CalendarDays, LogOut, Moon, Sun } from "lucide-react";
+import { Wallet, LayoutDashboard, BarChart3, CalendarDays, ReceiptText, CreditCard, LogOut, Moon, Sun } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -9,6 +9,8 @@ const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
   { to: "/charts", label: "Gráficos", icon: BarChart3 },
   { to: "/daily", label: "Diário", icon: CalendarDays },
+  { to: "/resultado-mensal", label: "Resultado PF x PJ", icon: ReceiptText },
+  { to: "/emprestimos", label: "Empréstimos", icon: CreditCard },
 ];
 
 interface AppSidebarProps {
