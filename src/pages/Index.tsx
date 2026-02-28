@@ -4,10 +4,10 @@ import { ExpenseList } from "@/components/ExpenseList";
 import { SummaryCards } from "@/components/SummaryCards";
 import { FinancialHealthPanel } from "@/components/FinancialHealthPanel";
 import { MonthlyDrePanel } from "@/components/MonthlyDrePanel";
+import { LoansSection } from "@/components/LoansSection";
 import { CodexAssistant } from "@/components/CodexAssistant";
 import { EditTransactionDialog } from "@/components/EditTransactionDialog";
-import { Wallet, Download, Upload, Trash2, BarChart3, Calendar, LogOut } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Download, Upload, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useExpensesStorage, useLocalStorage } from "@/hooks/use-local-storage";
 import { Button } from "@/components/ui/button";
@@ -42,10 +42,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ACCOUNT_OPTIONS, AccountType, filterExpensesByAccount } from "@/lib/accounts";
-import { useAuth } from "@/hooks/use-auth";
 
 const Index = () => {
-  const { user, signOut } = useAuth();
   const { expenses, addExpense, updateExpense, deleteExpense, clearExpenses, exportExpenses, importExpenses, duplicateExpense, addExpensesBatch } = useExpensesStorage();
   const [activeAccount, setActiveAccount] = useLocalStorage<AccountType>("expense-chart-account", "pf");
   const [categories] = useState<Category[]>(defaultCategories);
@@ -167,23 +165,8 @@ const Index = () => {
   const accountExpenses = filterExpensesByAccount(expenses, activeAccount);
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-white/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 max-w-7xl">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary rounded-lg">
-                <Wallet className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">Controle Financeiro</h1>
-                <p className="text-sm text-gray-600">Gerencie suas despesas</p>
-              </div>
-            </div>
-            
-            {/* Navigation and Data Management Buttons */}
-            <div className="flex items-center gap-2">
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center gap-2">
               <Select value={activeAccount} onValueChange={(value: AccountType) => setActiveAccount(value)}>
                 <SelectTrigger className="w-[120px]" aria-label="Conta">
                   <SelectValue placeholder="Conta" />
@@ -196,20 +179,7 @@ const Index = () => {
                   ))}
                 </SelectContent>
               </Select>
-              <Link to="/charts">
-                <Button variant="outline" size="sm" className="flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4" />
-                  Gráficos
-                </Button>
-              </Link>
-              
-              <Link to="/daily">
-                <Button variant="outline" size="sm" className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  Diário
-                </Button>
-              </Link>
-              
+
               <Button
                 onClick={handleExportExpenses}
                 variant="outline"
@@ -346,48 +316,33 @@ const Index = () => {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
+      </div>
 
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={signOut}
-                className="flex items-center gap-2"
-                title={user?.email ?? "Sair"}
-              >
-                <LogOut className="h-4 w-4" />
-                Sair
-              </Button>
-            </div>
-          </div>
+      <FinancialHealthPanel expenses={expenses} />
+      <MonthlyDrePanel expenses={expenses} />
+      <CodexAssistant />
+
+      <SummaryCards expenses={accountExpenses} account={activeAccount} />
+      <LoansSection expenses={accountExpenses} />
+
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div className="xl:col-span-1">
+          <ExpenseForm 
+            categories={categories} 
+            onAddExpense={handleAddExpense} 
+            existingLoans={accountExpenses.filter(e => e.type === "loan")}
+            defaultAccount={activeAccount}
+          />
         </div>
-      </header>
-
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <FinancialHealthPanel expenses={expenses} />
-        <MonthlyDrePanel expenses={expenses} />
-        <CodexAssistant />
-
-        <SummaryCards expenses={accountExpenses} account={activeAccount} />
-
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          <div className="xl:col-span-1">
-            <ExpenseForm 
-              categories={categories} 
-              onAddExpense={handleAddExpense} 
-              existingLoans={accountExpenses.filter(e => e.type === "loan")}
-              defaultAccount={activeAccount}
-            />
-          </div>
-          <div className="xl:col-span-2">
-            <ExpenseList
-              expenses={accountExpenses}
-              categories={categories}
-              onDeleteExpense={handleDeleteExpense}
-              onEditExpense={handleEditExpense}
-              onDuplicateExpense={handleDuplicateExpense}
-              activeAccount={activeAccount}
-            />
-          </div>
+        <div className="xl:col-span-2">
+          <ExpenseList
+            expenses={accountExpenses}
+            categories={categories}
+            onDeleteExpense={handleDeleteExpense}
+            onEditExpense={handleEditExpense}
+            onDuplicateExpense={handleDuplicateExpense}
+            activeAccount={activeAccount}
+          />
         </div>
       </div>
 

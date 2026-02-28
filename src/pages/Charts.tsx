@@ -1,11 +1,9 @@
 import { useState } from "react";
 import { ExpenseCharts } from "@/components/ExpenseCharts";
 import { useExpensesStorage, useLocalStorage } from "@/hooks/use-local-storage";
-import { ArrowLeft, BarChart3, TrendingUp, DollarSign, Calendar, Filter } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { BarChart3, TrendingUp, DollarSign, Calendar, Filter } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Link } from "react-router-dom";
 import { filterNonFutureExpenses, parseDateString } from "@/lib/utils";
 import { defaultCategories } from "@/data/categories";
 import { ACCOUNT_OPTIONS, AccountType, filterExpensesByAccount } from "@/lib/accounts";
@@ -106,51 +104,25 @@ const Charts = () => {
   const topCategory = getTopCategory();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
-      {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
-        <div className="container mx-auto px-4 py-6 max-w-7xl">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl shadow-lg">
-                <BarChart3 className="h-7 w-7 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                  Dashboard Financeiro
-                </h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Análises detalhadas e insights dos seus dados
-                </p>
-              </div>
-            </div>
-            
-            {/* Navigation Button */}
-            <div className="flex items-center gap-3">
-              <Select value={activeAccount} onValueChange={(value: AccountType) => setActiveAccount(value)}>
-                <SelectTrigger className="w-[120px]">
-                  <SelectValue placeholder="Conta" />
-                </SelectTrigger>
-                <SelectContent>
-                  {ACCOUNT_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Link to="/">
-                <Button variant="outline" size="sm" className="flex items-center gap-2 hover:bg-gray-50">
-                  <ArrowLeft className="h-4 w-4" />
-                  Voltar ao Início
-                </Button>
-              </Link>
-            </div>
-          </div>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">Dashboard Financeiro</h1>
+          <p className="text-sm text-gray-600">Análises detalhadas e insights dos seus dados</p>
         </div>
-      </header>
-
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        <Select value={activeAccount} onValueChange={(value: AccountType) => setActiveAccount(value)}>
+          <SelectTrigger className="w-[120px]" aria-label="Conta">
+            <SelectValue placeholder="Conta" />
+          </SelectTrigger>
+          <SelectContent>
+            {ACCOUNT_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
         {/* Filters */}
         <div className="mb-8">
           <Card className="border-0 shadow-lg bg-white/70 backdrop-blur-sm">
@@ -267,7 +239,6 @@ const Charts = () => {
 
         {/* Charts */}
         <ExpenseCharts expenses={filteredExpenses} categories={defaultCategories} />
-      </div>
     </div>
   );
 };

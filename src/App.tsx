@@ -15,6 +15,7 @@ import OfflineIndicator from "./components/OfflineIndicator";
 import { usePWA } from "./hooks/usePWA";
 import { AuthProvider } from "./hooks/use-auth";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { AppLayout } from "./components/AppLayout";
 
 const queryClient = new QueryClient();
 
@@ -47,29 +48,16 @@ const AppContent = () => {
         <Routes>
           <Route path="/auth" element={<AuthPage />} />
           <Route
-            path="/"
             element={
               <ProtectedRoute>
-                <Index />
+                <AppLayout />
               </ProtectedRoute>
             }
-          />
-          <Route
-            path="/charts"
-            element={
-              <ProtectedRoute>
-                <Charts />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/daily"
-            element={
-              <ProtectedRoute>
-                <DailyExpensesPage />
-              </ProtectedRoute>
-            }
-          />
+          >
+            <Route path="/" element={<Index />} />
+            <Route path="/charts" element={<Charts />} />
+            <Route path="/daily" element={<DailyExpensesPage />} />
+          </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
