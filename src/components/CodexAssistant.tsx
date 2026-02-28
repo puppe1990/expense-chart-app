@@ -17,7 +17,7 @@ const INITIAL_MESSAGE: AssistantMessage = {
 };
 
 export const CodexAssistant = () => {
-  const { token } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [messages, setMessages] = useState<AssistantMessage[]>([INITIAL_MESSAGE]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -33,7 +33,7 @@ export const CodexAssistant = () => {
 
   const handleSend = async () => {
     const content = input.trim();
-    if (!content || !token || isLoading) return;
+    if (!content || !isAuthenticated || isLoading) return;
 
     const userMessage: AssistantMessage = { role: "user", content };
     setMessages((previous) => [...previous, userMessage]);
@@ -45,8 +45,8 @@ export const CodexAssistant = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
+        credentials: "include",
         body: JSON.stringify({
           message: content,
           history: historyForApi,
@@ -54,8 +54,10 @@ export const CodexAssistant = () => {
       });
 
       if (!response.ok) {
-        const errorBody = (await response.json().catch(() => ({}))) as { error?: string };
-        throw new Error(errorBody.error ?? "Falha ao conversar com o assistente.");
+        const errorBody = (await response.json().catch(() => ({}))) as {
+          error?: { message?: string };
+        };
+        throw new Error(errorBody.error?.message ?? "Falha ao conversar com o assistente.");
       }
 
       const data = (await response.json()) as { reply: string };

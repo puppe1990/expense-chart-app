@@ -5,104 +5,93 @@ interface AuthUser {
   email: string;
 }
 
-interface AuthState {
-  token: string;
-  user: AuthUser;
-}
-
 interface AuthContextValue {
   user: AuthUser | null;
-  token: string | null;
   isAuthenticated: boolean;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
-  signOut: () => void;
+  signOut: () => Promise<void>;
 }
 
-const AUTH_STORAGE_KEY = "expense-chart-auth";
-
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
-
-const saveAuthState = (state: AuthState | null) => {
-  if (state) {
-    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(state));
-  } else {
-    localStorage.removeItem(AUTH_STORAGE_KEY);
-  }
-};
-
-export const getAuthToken = (): string | null => {
-  try {
-    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as AuthState;
-    return parsed.token ?? null;
-  } catch (_error) {
-    return null;
-  }
-};
 
 const fetchAuth = async (path: string, payload: { email: string; password: string }) => {
   const response = await fetch(path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
-    const body = (await response.json().catch(() => ({}))) as { error?: string };
-    throw new Error(body.error ?? "Authentication failed");
+    const body = (await response.json().catch(() => ({}))) as {
+      error?: { message?: string };
+    };
+    throw new Error(body.error?.message ?? "Authentication failed");
   }
 
-  return (await response.json()) as { token: string; user: AuthUser };
+  return (await response.json()) as { user: AuthUser };
 };
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [state, setState] = useState<AuthState | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(AUTH_STORAGE_KEY);
-      if (raw) {
-        setState(JSON.parse(raw) as AuthState);
+    const loadSession = async () => {
+      try {
+        const response = await fetch("/api/auth/me", {
+          method: "GET",
+          credentials: "include",
+        });
+        if (!response.ok) {
+          setUser(null);
+          return;
+        }
+        const payload = (await response.json()) as { user: AuthUser };
+        setUser(payload.user ?? null);
+      } catch (_error) {
+        setUser(null);
+      } finally {
+        setLoading(false);
       }
-    } catch (_error) {
-      localStorage.removeItem(AUTH_STORAGE_KEY);
-    } finally {
-      setLoading(false);
-    }
+    };
+
+    void loadSession();
   }, []);
 
   const signIn = async (email: string, password: string) => {
     const auth = await fetchAuth("/api/auth/signin", { email, password });
-    setState(auth);
-    saveAuthState(auth);
+    setUser(auth.user);
   };
 
   const signUp = async (email: string, password: string) => {
     const auth = await fetchAuth("/api/auth/signup", { email, password });
-    setState(auth);
-    saveAuthState(auth);
+    setUser(auth.user);
   };
 
-  const signOut = () => {
-    setState(null);
-    saveAuthState(null);
+  const signOut = async () => {
+    try {
+      await fetch("/api/auth/signout", {
+        method: "POST",
+        credentials: "include",
+      });
+    } finally {
+      setUser(null);
+    }
   };
 
   const value = useMemo<AuthContextValue>(
     () => ({
-      user: state?.user ?? null,
-      token: state?.token ?? null,
-      isAuthenticated: Boolean(state?.token),
+      user,
+      isAuthenticated: Boolean(user),
       loading,
       signIn,
       signUp,
       signOut,
     }),
-    [state, loading]
+    [user, loading]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
