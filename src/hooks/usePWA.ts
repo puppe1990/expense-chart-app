@@ -37,6 +37,21 @@ export const usePWA = () => {
 
     let updateInterval: NodeJS.Timeout | null = null;
 
+    const unregisterServiceWorkersInDev = async () => {
+      if (!("serviceWorker" in navigator)) return;
+      try {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map((registration) => registration.unregister()));
+        if ("caches" in window) {
+          const cacheNames = await caches.keys();
+          await Promise.all(cacheNames.map((cacheName) => caches.delete(cacheName)));
+        }
+        console.log("Service Worker disabled in development");
+      } catch (error) {
+        console.error("Service Worker cleanup failed in development:", error);
+      }
+    };
+
     // Register service worker
     const registerServiceWorker = async () => {
       if ('serviceWorker' in navigator) {
@@ -93,7 +108,11 @@ export const usePWA = () => {
 
     // Initial checks
     checkIfInstalled();
-    registerServiceWorker();
+    if (import.meta.env.DEV) {
+      void unregisterServiceWorkersInDev();
+    } else {
+      void registerServiceWorker();
+    }
 
     // Event listeners
     window.addEventListener('online', handleOnline);
