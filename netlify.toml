@@ -10,12 +10,12 @@
   targetPort = 8080
   port = 8888
 
-[[redirects]]
+[[context.production.redirects]]
   from = "/api/*"
   to = "/.netlify/functions/api/:splat"
   status = 200
 
-[[redirects]]
+[[context.production.redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
