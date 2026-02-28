@@ -1,7 +1,8 @@
 import { createServer } from "node:net";
 import { spawn } from "node:child_process";
+import { execSync } from "node:child_process";
 
-const DEV_PORT_CANDIDATES = [8888, 8889, 8890, 8891, 9000];
+const DEV_PORT = 8888;
 const TARGET_PORT_CANDIDATES = [8080, 8081, 8082, 5173, 5174];
 
 function isPortFree(port) {
@@ -25,7 +26,25 @@ async function findFreePort(candidates, label) {
 }
 
 async function main() {
-  const devPort = await findFreePort(DEV_PORT_CANDIDATES, "Netlify Dev");
+  const devPortFree = await isPortFree(DEV_PORT);
+  if (!devPortFree) {
+    try {
+      const pidList = execSync(`lsof -ti tcp:${DEV_PORT} -sTCP:LISTEN`, {
+        encoding: "utf8",
+      })
+        .split("\n")
+        .map((pid) => pid.trim())
+        .filter(Boolean);
+
+      if (pidList.length > 0) {
+        execSync(`kill -9 ${pidList.join(" ")}`);
+      }
+    } catch {
+      // If lsof/kill fails, let Netlify report the port issue.
+    }
+  }
+
+  const devPort = DEV_PORT;
   const targetPort = await findFreePort(TARGET_PORT_CANDIDATES, "Vite");
 
   console.log(`Netlify Dev porta: ${devPort}`);
