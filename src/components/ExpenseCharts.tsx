@@ -197,7 +197,7 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
     const colors = [
       "#ef4444", "#f97316", "#f59e0b", "#eab308", "#84cc16", 
       "#22c55e", "#10b981", "#14b8a6", "#06b6d4", "#0ea5e9",
-      "#3b82f6", "#6366f1", "#8b5cf6", "#a855f7", "#d946ef",
+      "#10b981", "#6366f1", "#8b5cf6", "#a855f7", "#d946ef",
       "#ec4899", "#f43f5e", "#64748b", "#71717a", "#78716c"
     ];
 
@@ -313,8 +313,8 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
                     <stop offset="100%" stopColor="#ea580c" />
                   </linearGradient>
                   <linearGradient id="netGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#3b82f6" />
-                    <stop offset="100%" stopColor="#1d4ed8" />
+                    <stop offset="0%" stopColor="#10b981" />
+                    <stop offset="100%" stopColor="#0f172a" />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
@@ -451,8 +451,8 @@ export const ExpenseCharts = ({ expenses, categories }: ExpenseChartsProps) => {
               <BarChart data={monthlyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                 <defs>
                   <linearGradient id="netBarGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#3b82f6" />
-                    <stop offset="100%" stopColor="#1d4ed8" />
+                    <stop offset="0%" stopColor="#10b981" />
+                    <stop offset="100%" stopColor="#0f172a" />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.2} />

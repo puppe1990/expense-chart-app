@@ -10,7 +10,7 @@ export const AppLayout = () => {
 
   return (
     <div className="min-h-screen bg-background md:grid md:grid-cols-[320px_1fr]">
-      <aside className="hidden md:block border-r p-6 bg-white/50 backdrop-blur-sm">
+      <aside className="hidden md:block border-r p-6 bg-card/90 backdrop-blur-sm">
         <AppSidebar />
       </aside>
       <main className="p-4 md:p-8 overflow-x-hidden">
@@ -28,7 +28,7 @@ export const AppLayout = () => {
       </main>
       <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
         <SheetContent side="left" className="p-0 w-[320px] sm:max-w-[320px]">
-          <div className="h-full p-6 bg-white/50 backdrop-blur-sm">
+          <div className="h-full p-6 bg-card/90 backdrop-blur-sm">
             <AppSidebar onNavigate={() => setMobileMenuOpen(false)} />
           </div>
         </SheetContent>

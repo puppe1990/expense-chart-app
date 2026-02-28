@@ -1,7 +1,9 @@
-import { Wallet, LayoutDashboard, BarChart3, CalendarDays, LogOut } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Wallet, LayoutDashboard, BarChart3, CalendarDays, LogOut, Moon, Sun } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
+import { useTheme } from "next-themes";
 
 const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -15,6 +17,14 @@ interface AppSidebarProps {
 
 export const AppSidebar = ({ onNavigate }: AppSidebarProps) => {
   const { user, signOut } = useAuth();
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isDark = mounted ? resolvedTheme === "dark" : false;
 
   return (
     <div className="h-full flex flex-col">
@@ -23,8 +33,8 @@ export const AppSidebar = ({ onNavigate }: AppSidebarProps) => {
           <Wallet className="h-8 w-8 text-white" />
         </div>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Controle Financeiro</h1>
-          <p className="text-sm text-gray-600">Gerencie suas despesas</p>
+          <h1 className="text-3xl font-bold text-foreground">Controle Financeiro</h1>
+          <p className="text-sm text-muted-foreground">Gerencie suas despesas</p>
         </div>
       </div>
 
@@ -51,6 +61,15 @@ export const AppSidebar = ({ onNavigate }: AppSidebarProps) => {
       </nav>
 
       <div className="mt-auto pt-6 border-t space-y-3">
+        <Button
+          variant="outline"
+          className="w-full justify-start gap-2"
+          onClick={() => setTheme(isDark ? "light" : "dark")}
+          aria-label={isDark ? "Ativar modo claro" : "Ativar modo escuro"}
+        >
+          {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          {isDark ? "Modo claro" : "Modo escuro"}
+        </Button>
         <p className="text-xs text-muted-foreground truncate" title={user?.email ?? "Usuário"}>
           {user?.email ?? "Usuário"}
         </p>
