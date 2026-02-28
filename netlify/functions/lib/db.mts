@@ -71,6 +71,18 @@ const MIGRATIONS: Migration[] = [
       "CREATE INDEX IF NOT EXISTS idx_rate_limits_reset_at ON rate_limits(reset_at)",
     ],
   },
+  {
+    id: "003_expense_versions",
+    statements: [
+      `
+        CREATE TABLE IF NOT EXISTS expense_versions (
+          user_id TEXT PRIMARY KEY,
+          version INTEGER NOT NULL DEFAULT 0,
+          updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        )
+      `,
+    ],
+  },
 ];
 
 let schemaReadyPromise: Promise<void> | null = null;

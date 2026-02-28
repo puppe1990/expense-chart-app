@@ -1,5 +1,5 @@
 import type { AuthInfo } from "./types.mts";
-import { jsonResponse, parseBody } from "./response.mts";
+import { jsonResponse, parseBody, errorResponse } from "./response.mts";
 import { assistantRequestSchema } from "./validation.mts";
 
 const extractAssistantText = (payload: unknown): string | null => {
@@ -28,13 +28,18 @@ const extractAssistantText = (payload: unknown): string | null => {
   return null;
 };
 
-export const handleAssistant = async (req: Request, auth: AuthInfo) => {
-  const parsed = await parseBody(req, assistantRequestSchema);
+export const handleAssistant = async (req: Request, _auth: AuthInfo, requestId: string) => {
+  const parsed = await parseBody(req, assistantRequestSchema, requestId);
   if ("error" in parsed) return parsed.error;
 
   const openAiApiKey = Netlify.env.get("OPENAI_API_KEY");
   if (!openAiApiKey) {
-    return jsonResponse({ error: "Missing OPENAI_API_KEY environment variable" }, 500);
+    return errorResponse({
+      code: "INTERNAL_ERROR",
+      message: "Assistant service unavailable",
+      requestId,
+      status: 500,
+    });
   }
 
   const model = Netlify.env.get("OPENAI_CODEX_MODEL") || "codex-mini-latest";
@@ -49,7 +54,9 @@ export const handleAssistant = async (req: Request, auth: AuthInfo) => {
     ...history.map((message) => ({ role: message.role, content: message.content })),
     {
       role: "user",
-      content: `${parsed.data.message}\n\nContexto do usuário autenticado: ${auth.email ?? auth.userId}`,
+      content:
+        `${parsed.data.message}\n\n` +
+        "Contexto do usuário: pessoa autenticada em app financeiro PF/PJ.",
     },
   ];
 
@@ -67,17 +74,23 @@ export const handleAssistant = async (req: Request, auth: AuthInfo) => {
   });
 
   if (!openAiResponse.ok) {
-    const errorBody = await openAiResponse.text();
-    return jsonResponse(
-      { error: "OpenAI request failed", details: errorBody.slice(0, 1000) },
-      502
-    );
+    return errorResponse({
+      code: "INTERNAL_ERROR",
+      message: "Assistant provider request failed",
+      requestId,
+      status: 502,
+    });
   }
 
   const openAiPayload = (await openAiResponse.json()) as unknown;
   const reply = extractAssistantText(openAiPayload);
   if (!reply) {
-    return jsonResponse({ error: "Empty assistant response" }, 502);
+    return errorResponse({
+      code: "INTERNAL_ERROR",
+      message: "Assistant response was empty",
+      requestId,
+      status: 502,
+    });
   }
 
   return jsonResponse({ reply });

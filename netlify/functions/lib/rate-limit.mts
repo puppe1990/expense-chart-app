@@ -1,5 +1,5 @@
 import { getDbClient } from "./db.mts";
-import { jsonResponse } from "./response.mts";
+import { errorResponse } from "./response.mts";
 
 type RateLimitOptions = {
   bucket: string;
@@ -26,7 +26,8 @@ export const enforceRateLimit = async ({
   identifier,
   limit,
   windowMs,
-}: RateLimitOptions): Promise<Response | null> => {
+  requestId = "unknown",
+}: RateLimitOptions & { requestId?: string }): Promise<Response | null> => {
   const db = getDbClient();
   const key = `${bucket}:${identifier}`;
   const now = Date.now();
@@ -51,13 +52,13 @@ export const enforceRateLimit = async ({
 
   if (currentCount >= limit) {
     const retryAfterSeconds = Math.max(1, Math.ceil((resetAt - now) / 1000));
-    return jsonResponse(
-      {
-        error: "Too many requests",
-        retryAfterSeconds,
-      },
-      429
-    );
+    return errorResponse({
+      code: "RATE_LIMITED",
+      message: "Too many requests",
+      requestId,
+      status: 429,
+      details: { retryAfterSeconds },
+    });
   }
 
   await db.execute({

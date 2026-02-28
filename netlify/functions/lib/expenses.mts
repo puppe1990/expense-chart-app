@@ -70,6 +70,44 @@ export const upsertExpense = async (expense: ExpenseRecord, userId: string) => {
   });
 };
 
+const ensureUserVersionRow = async (userId: string) => {
+  const db = getDbClient();
+  await db.execute({
+    sql: `
+      INSERT INTO expense_versions (user_id, version, updated_at)
+      VALUES (?, 0, datetime('now'))
+      ON CONFLICT(user_id) DO NOTHING
+    `,
+    args: [userId],
+  });
+};
+
+const getUserVersion = async (userId: string) => {
+  await ensureUserVersionRow(userId);
+  const db = getDbClient();
+  const result = await db.execute({
+    sql: "SELECT version FROM expense_versions WHERE user_id = ? LIMIT 1",
+    args: [userId],
+  });
+  const row = result.rows[0] as Record<string, unknown> | undefined;
+  return row ? Number(row.version) : 0;
+};
+
+const bumpUserVersion = async (userId: string) => {
+  const db = getDbClient();
+  await db.execute({
+    sql: `
+      INSERT INTO expense_versions (user_id, version, updated_at)
+      VALUES (?, 1, datetime('now'))
+      ON CONFLICT(user_id) DO UPDATE SET
+        version = version + 1,
+        updated_at = datetime('now')
+    `,
+    args: [userId],
+  });
+  return await getUserVersion(userId);
+};
+
 export const handleGetExpenses = async (url: URL, auth: AuthInfo) => {
   const account = url.searchParams.get("account") ?? undefined;
   const dateFrom = url.searchParams.get("dateFrom") ?? undefined;
@@ -98,18 +136,20 @@ export const handleGetExpenses = async (url: URL, auth: AuthInfo) => {
     expenses = expenses.filter((expense) => expense.date <= dateTo);
   }
 
-  return jsonResponse(expenses);
+  const version = await getUserVersion(auth.userId);
+  return jsonResponse({ items: expenses, version });
 };
 
-export const handleCreateExpense = async (req: Request, auth: AuthInfo) => {
-  const parsed = await parseBody(req, expenseSchema);
+export const handleCreateExpense = async (req: Request, auth: AuthInfo, requestId: string) => {
+  const parsed = await parseBody(req, expenseSchema, requestId);
   if ("error" in parsed) return parsed.error;
   await upsertExpense(parsed.data, auth.userId);
-  return jsonResponse({ ok: true }, 201);
+  const version = await bumpUserVersion(auth.userId);
+  return jsonResponse({ ok: true, version }, 201);
 };
 
-export const handleBatchExpense = async (req: Request, auth: AuthInfo) => {
-  const parsed = await parseBody(req, expenseBatchSchema);
+export const handleBatchExpense = async (req: Request, auth: AuthInfo, requestId: string) => {
+  const parsed = await parseBody(req, expenseBatchSchema, requestId);
   if ("error" in parsed) return parsed.error;
   const expenses = parsed.data;
 
@@ -117,11 +157,12 @@ export const handleBatchExpense = async (req: Request, auth: AuthInfo) => {
     await upsertExpense(expense, auth.userId);
   }
 
-  return jsonResponse({ ok: true, count: expenses.length }, 201);
+  const version = await bumpUserVersion(auth.userId);
+  return jsonResponse({ ok: true, count: expenses.length, version }, 201);
 };
 
-export const handleReplaceExpenses = async (req: Request, auth: AuthInfo) => {
-  const parsed = await parseBody(req, expenseBatchSchema);
+export const handleReplaceExpenses = async (req: Request, auth: AuthInfo, requestId: string) => {
+  const parsed = await parseBody(req, expenseBatchSchema, requestId);
   if ("error" in parsed) return parsed.error;
   const expenses = parsed.data;
 
@@ -135,14 +176,21 @@ export const handleReplaceExpenses = async (req: Request, auth: AuthInfo) => {
     await upsertExpense(expense, auth.userId);
   }
 
-  return jsonResponse({ ok: true, count: expenses.length });
+  const version = await bumpUserVersion(auth.userId);
+  return jsonResponse({ ok: true, count: expenses.length, version });
 };
 
-export const handleUpdateOneExpense = async (req: Request, id: string, auth: AuthInfo) => {
-  const parsed = await parseBody(req, expenseUpdateSchema);
+export const handleUpdateOneExpense = async (
+  req: Request,
+  id: string,
+  auth: AuthInfo,
+  requestId: string
+) => {
+  const parsed = await parseBody(req, expenseUpdateSchema, requestId);
   if ("error" in parsed) return parsed.error;
   await upsertExpense({ ...parsed.data, id }, auth.userId);
-  return jsonResponse({ ok: true });
+  const version = await bumpUserVersion(auth.userId);
+  return jsonResponse({ ok: true, version });
 };
 
 export const handleDeleteOneExpense = async (id: string, auth: AuthInfo) => {
@@ -152,7 +200,8 @@ export const handleDeleteOneExpense = async (id: string, auth: AuthInfo) => {
     args: [id, auth.userId],
   });
 
-  return jsonResponse({ ok: true });
+  const version = await bumpUserVersion(auth.userId);
+  return jsonResponse({ ok: true, version });
 };
 
 export const handleDeleteAllExpenses = async (auth: AuthInfo) => {
@@ -162,5 +211,6 @@ export const handleDeleteAllExpenses = async (auth: AuthInfo) => {
     args: [auth.userId],
   });
 
-  return jsonResponse({ ok: true });
+  const version = await bumpUserVersion(auth.userId);
+  return jsonResponse({ ok: true, version });
 };

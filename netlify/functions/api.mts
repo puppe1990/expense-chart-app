@@ -1,7 +1,7 @@
 import type { Config, Context } from "@netlify/functions";
 
 import { handleAssistant } from "./lib/assistant.mts";
-import { handleSignIn, handleSignUp, verifyAuth } from "./lib/auth.mts";
+import { buildSignOutResponse, handleSignIn, handleSignUp, verifyAuth } from "./lib/auth.mts";
 import { ensureSchema } from "./lib/db.mts";
 import {
   handleBatchExpense,
@@ -13,7 +13,7 @@ import {
   handleUpdateOneExpense,
 } from "./lib/expenses.mts";
 import { enforceRateLimit, getClientIp } from "./lib/rate-limit.mts";
-import { getApiPath, jsonResponse } from "./lib/response.mts";
+import { errorResponse, getApiPath, jsonResponse } from "./lib/response.mts";
 
 const getEnvInt = (key: string, fallback: number) => {
   const value = Netlify.env.get(key);
@@ -31,17 +31,43 @@ const RATE_LIMITS = {
   assistantWindowMs: getEnvInt("RATE_LIMIT_ASSISTANT_WINDOW_MS", 10 * 60 * 1000),
 } as const;
 
+const generateRequestId = () =>
+  typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+    ? crypto.randomUUID()
+    : `req-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
+const hashIdentifier = (value: string) => {
+  let hash = 2166136261;
+  for (let i = 0; i < value.length; i += 1) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+};
+
+const withRequestId = (response: Response, requestId: string) => {
+  const headers = new Headers(response.headers);
+  headers.set("x-request-id", requestId);
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+};
+
 export default async (req: Request, _context: Context) => {
+  const requestId = generateRequestId();
+  const method = req.method.toUpperCase();
+  const url = new URL(req.url);
+  const path = getApiPath(url);
+  const clientIp = getClientIp(req);
+  let authUserId: string | null = null;
+
   try {
     await ensureSchema();
 
-    const url = new URL(req.url);
-    const path = getApiPath(url);
-    const method = req.method.toUpperCase();
-    const clientIp = getClientIp(req);
-
     if (path === "/api/health" && method === "GET") {
-      return jsonResponse({ ok: true });
+      return withRequestId(jsonResponse({ ok: true }), requestId);
     }
 
     if (path === "/api/auth/signup" && method === "POST") {
@@ -50,9 +76,10 @@ export default async (req: Request, _context: Context) => {
         identifier: clientIp,
         limit: RATE_LIMITS.authSignupLimit,
         windowMs: RATE_LIMITS.authSignupWindowMs,
+        requestId,
       });
-      if (blocked) return blocked;
-      return await handleSignUp(req);
+      if (blocked) return withRequestId(blocked, requestId);
+      return withRequestId(await handleSignUp(req, requestId), requestId);
     }
 
     if (path === "/api/auth/signin" && method === "POST") {
@@ -61,38 +88,55 @@ export default async (req: Request, _context: Context) => {
         identifier: clientIp,
         limit: RATE_LIMITS.authSigninLimit,
         windowMs: RATE_LIMITS.authSigninWindowMs,
+        requestId,
       });
-      if (blocked) return blocked;
-      return await handleSignIn(req);
+      if (blocked) return withRequestId(blocked, requestId);
+      return withRequestId(await handleSignIn(req, requestId), requestId);
+    }
+
+    if (path === "/api/auth/signout" && method === "POST") {
+      return withRequestId(buildSignOutResponse(), requestId);
     }
 
     const auth = verifyAuth(req);
     if (!auth) {
-      return jsonResponse({ error: "Unauthorized" }, 401);
+      return withRequestId(
+        errorResponse({
+          code: "UNAUTHORIZED",
+          message: "Unauthorized",
+          requestId,
+          status: 401,
+        }),
+        requestId
+      );
     }
+    authUserId = auth.userId;
 
     if (path === "/api/auth/me" && method === "GET") {
-      return jsonResponse({ user: { id: auth.userId, email: auth.email } });
+      return withRequestId(
+        jsonResponse({ user: { id: auth.userId, email: auth.email } }),
+        requestId
+      );
     }
 
     if (path === "/api/expenses" && method === "GET") {
-      return await handleGetExpenses(url, auth);
+      return withRequestId(await handleGetExpenses(url, auth), requestId);
     }
 
     if (path === "/api/expenses" && method === "POST") {
-      return await handleCreateExpense(req, auth);
+      return withRequestId(await handleCreateExpense(req, auth, requestId), requestId);
     }
 
     if (path === "/api/expenses/batch" && method === "POST") {
-      return await handleBatchExpense(req, auth);
+      return withRequestId(await handleBatchExpense(req, auth, requestId), requestId);
     }
 
     if (path === "/api/expenses/replace" && method === "PUT") {
-      return await handleReplaceExpenses(req, auth);
+      return withRequestId(await handleReplaceExpenses(req, auth, requestId), requestId);
     }
 
     if (path === "/api/expenses" && method === "DELETE") {
-      return await handleDeleteAllExpenses(auth);
+      return withRequestId(await handleDeleteAllExpenses(auth), requestId);
     }
 
     if (path === "/api/assistant" && method === "POST") {
@@ -101,25 +145,54 @@ export default async (req: Request, _context: Context) => {
         identifier: `${auth.userId}:${clientIp}`,
         limit: RATE_LIMITS.assistantLimit,
         windowMs: RATE_LIMITS.assistantWindowMs,
+        requestId,
       });
-      if (blocked) return blocked;
-      return await handleAssistant(req, auth);
+      if (blocked) return withRequestId(blocked, requestId);
+      return withRequestId(await handleAssistant(req, auth, requestId), requestId);
     }
 
     if (path.startsWith("/api/expenses/") && method === "PUT") {
       const id = path.replace("/api/expenses/", "");
-      return await handleUpdateOneExpense(req, id, auth);
+      return withRequestId(await handleUpdateOneExpense(req, id, auth, requestId), requestId);
     }
 
     if (path.startsWith("/api/expenses/") && method === "DELETE") {
       const id = path.replace("/api/expenses/", "");
-      return await handleDeleteOneExpense(id, auth);
+      return withRequestId(await handleDeleteOneExpense(id, auth), requestId);
     }
 
-    return jsonResponse({ error: "Not Found" }, 404);
+    return withRequestId(
+      errorResponse({
+        code: "NOT_FOUND",
+        message: "Not Found",
+        requestId,
+        status: 404,
+      }),
+      requestId
+    );
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Internal error";
-    return jsonResponse({ error: message }, 500);
+    const errorMessage = error instanceof Error ? error.message : "Internal error";
+    console.error(
+      JSON.stringify({
+        level: "error",
+        code: "INTERNAL_ERROR",
+        request_id: requestId,
+        path,
+        method,
+        user_id_hash: hashIdentifier(authUserId ?? "anonymous"),
+        message: errorMessage,
+      })
+    );
+
+    return withRequestId(
+      errorResponse({
+        code: "INTERNAL_ERROR",
+        message: "Internal server error",
+        requestId,
+        status: 500,
+      }),
+      requestId
+    );
   }
 };
 
