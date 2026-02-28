@@ -1,6 +1,6 @@
-const CACHE_NAME = 'expense-tracker-pro-v1.0.4';
-const STATIC_CACHE_NAME = 'expense-tracker-static-v1.0.4';
-const DYNAMIC_CACHE_NAME = 'expense-tracker-dynamic-v1.0.4';
+const CACHE_NAME = 'expense-tracker-pro-v1.0.5';
+const STATIC_CACHE_NAME = 'expense-tracker-static-v1.0.5';
+const DYNAMIC_CACHE_NAME = 'expense-tracker-dynamic-v1.0.5';
 
 // Files to cache for offline functionality
 const STATIC_FILES = [
@@ -10,6 +10,7 @@ const STATIC_FILES = [
   '/favicon.ico',
   '/favicon-16x16.png',
   '/favicon-32x32.png',
+  '/apple-touch-icon.png',
   '/pwa-192x192.png',
   '/pwa-512x512.png'
 ];

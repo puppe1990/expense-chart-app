@@ -697,8 +697,8 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
                   className="group/item relative p-6 rounded-2xl border-2 border-gray-100 dark:border-gray-700 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 hover:shadow-lg hover:shadow-primary/10 transition-all duration-300 hover:scale-[1.02] hover:border-primary/20"
                 >
                   {/* Main transaction info */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4 flex-1">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex min-w-0 items-start gap-3 sm:items-center sm:gap-4 sm:flex-1">
                       <div className="text-3xl p-3 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-xl group-hover/item:scale-110 transition-transform duration-300">
                         {isTransfer ? (
                           <div className="flex items-center gap-1">
@@ -710,7 +710,7 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-base truncate text-gray-900 dark:text-gray-100">{expense.description}</p>
+                        <p className="font-semibold text-base break-words text-gray-900 dark:text-gray-100">{expense.description}</p>
                         <div className="flex items-center gap-2 mt-2 flex-wrap">
                           <Badge
                             variant="secondary"
@@ -741,16 +741,16 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <span className={`text-lg font-black ${getTransactionTypeColor(expense.type)}`}>
+                    <div className="flex w-full items-center justify-between gap-3 sm:w-auto sm:justify-end sm:gap-4">
+                      <span className={`text-base sm:text-lg font-black ${getTransactionTypeColor(expense.type)} whitespace-nowrap`}>
                         {isIncome ? "+" : isTransfer ? transferSign : "-"}{formatCurrency(expense.amount)}
                       </span>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 sm:gap-2 shrink-0">
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => onEditExpense(expense)}
-                          className="h-10 w-10 rounded-xl hover:bg-primary/10 hover:text-primary transition-all duration-300 hover:scale-110"
+                          className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl hover:bg-primary/10 hover:text-primary transition-all duration-300 hover:scale-110"
                           title="Editar transação"
                         >
                           <Edit className="h-4 w-4" />
@@ -759,7 +759,7 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
                           variant="ghost"
                           size="icon"
                           onClick={() => onDuplicateExpense(expense)}
-                          className="h-10 w-10 rounded-xl hover:bg-blue-500/10 hover:text-blue-500 transition-all duration-300 hover:scale-110"
+                          className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl hover:bg-blue-500/10 hover:text-blue-500 transition-all duration-300 hover:scale-110"
                           title="Duplicar transação"
                         >
                           <Copy className="h-4 w-4" />
@@ -768,7 +768,7 @@ export const ExpenseList = ({ expenses, categories, onDeleteExpense, onEditExpen
                           variant="ghost"
                           size="icon"
                           onClick={() => onDeleteExpense(expense.id)}
-                          className="h-10 w-10 rounded-xl hover:bg-destructive/10 hover:text-destructive transition-all duration-300 hover:scale-110"
+                          className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl hover:bg-destructive/10 hover:text-destructive transition-all duration-300 hover:scale-110"
                           title="Excluir transação"
                         >
                           <Trash2 className="h-4 w-4" />
