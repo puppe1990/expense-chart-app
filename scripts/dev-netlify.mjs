@@ -9,7 +9,7 @@ function isPortFree(port) {
     const server = createServer();
     server.unref();
     server.on("error", () => resolve(false));
-    server.listen({ port, host: "127.0.0.1" }, () => {
+    server.listen({ port }, () => {
       server.close(() => resolve(true));
     });
   });
@@ -31,19 +31,8 @@ async function main() {
   console.log(`Netlify Dev porta: ${devPort}`);
   console.log(`Vite porta: ${targetPort}`);
 
-  const child = spawn(
-    "netlify",
-    [
-      "dev",
-      "--port",
-      String(devPort),
-      "--targetPort",
-      String(targetPort),
-      "--command",
-      `vite --strictPort --port ${targetPort}`,
-    ],
-    { stdio: "inherit", shell: true },
-  );
+  const command = `netlify dev --port ${devPort} --target-port ${targetPort} --command "vite --port ${targetPort}"`;
+  const child = spawn(command, { stdio: "inherit", shell: true });
 
   child.on("exit", (code) => {
     process.exit(code ?? 1);
