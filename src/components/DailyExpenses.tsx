@@ -695,12 +695,12 @@ export const DailyExpenses = ({ expenses, categories, account, onUpdateExpense, 
       {/* Header com navegação do mês */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
               <Calendar className="h-5 w-5" />
               Gastos Diários
             </CardTitle>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
@@ -708,7 +708,7 @@ export const DailyExpenses = ({ expenses, categories, account, onUpdateExpense, 
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <span className="text-lg font-semibold min-w-[200px] text-center">
+              <span className="text-sm sm:text-lg font-semibold text-center min-w-0 px-2">
                 {currentDate.toLocaleDateString('pt-BR', { 
                   month: 'long', 
                   year: 'numeric' 
@@ -725,7 +725,7 @@ export const DailyExpenses = ({ expenses, categories, account, onUpdateExpense, 
                 variant="outline"
                 size="sm"
                 onClick={forceUpdate}
-                className="ml-2"
+                className="sm:ml-2"
               >
                 <RefreshCw className="h-4 w-4" />
               </Button>
@@ -735,7 +735,7 @@ export const DailyExpenses = ({ expenses, categories, account, onUpdateExpense, 
                     variant={bulkMode ? "default" : "outline"}
                     size="sm"
                     onClick={handleToggleBulkMode}
-                    className="ml-2"
+                    className="sm:ml-2"
                     title={bulkMode ? "Sair do modo de seleção" : "Selecionar múltiplas transações"}
                   >
                     {bulkMode ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
@@ -746,7 +746,7 @@ export const DailyExpenses = ({ expenses, categories, account, onUpdateExpense, 
                         variant="outline"
                         size="sm"
                         onClick={handleSelectAll}
-                        className="ml-2"
+                        className="sm:ml-2"
                         title="Selecionar todas"
                       >
                         <CheckSquare className="h-4 w-4" />
@@ -755,7 +755,7 @@ export const DailyExpenses = ({ expenses, categories, account, onUpdateExpense, 
                         variant="default"
                         size="sm"
                         onClick={handleBulkDuplicate}
-                        className="ml-2"
+                        className="sm:ml-2"
                         disabled={selectedTransactionIds.size === 0}
                         title="Duplicar selecionadas"
                       >
@@ -771,7 +771,7 @@ export const DailyExpenses = ({ expenses, categories, account, onUpdateExpense, 
                   <Button
                     variant="outline"
                     size="sm"
-                    className="ml-2"
+                    className="sm:ml-2"
                     title="Exportar dados"
                   >
                     <Download className="h-4 w-4" />
@@ -867,9 +867,9 @@ export const DailyExpenses = ({ expenses, categories, account, onUpdateExpense, 
                 onClick={() => hasTransactions && setSelectedDate(selectedDate === day.date ? null : day.date)}
               >
                 <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className={`text-lg ${!hasTransactions ? 'text-gray-400' : ''}`}>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <CardTitle className={`text-base sm:text-lg break-words ${!hasTransactions ? 'text-gray-400' : ''}`}>
                         {formatDisplayDate(day.date)}
                       </CardTitle>
                       <p className={`text-sm ${!hasTransactions ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -879,8 +879,8 @@ export const DailyExpenses = ({ expenses, categories, account, onUpdateExpense, 
                         }
                       </p>
                     </div>
-                    <div className="text-right">
-                      <div className={`text-lg font-semibold ${
+                    <div className="text-left sm:text-right">
+                      <div className={`text-base sm:text-lg font-semibold ${
                         !hasTransactions 
                           ? 'text-gray-400' 
                           : day.netAmount >= 0 ? 'text-green-600' : 'text-red-600'
@@ -905,13 +905,13 @@ export const DailyExpenses = ({ expenses, categories, account, onUpdateExpense, 
                         return (
                           <div 
                             key={transaction.id}
-                            className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
+                            className={`flex flex-col gap-3 p-3 rounded-lg transition-colors ${
                               isSelected 
                                 ? 'bg-primary/10 dark:bg-primary/20 border-2 border-primary' 
                                 : 'bg-gray-50 dark:bg-gray-900/50 hover:bg-gray-100 dark:hover:bg-gray-800/50'
                             }`}
                           >
-                            <div className="flex items-center gap-3 flex-1">
+                            <div className="flex min-w-0 items-start gap-3">
                               {bulkMode && (
                                 <Checkbox
                                   checked={isSelected}
@@ -924,8 +924,8 @@ export const DailyExpenses = ({ expenses, categories, account, onUpdateExpense, 
                                 style={{ backgroundColor: category?.color || '#64748b' }}
                               />
                               <div className="flex-1 min-w-0">
-                                <div className="font-medium">{transaction.description}</div>
-                                <div className="text-sm text-gray-500 flex items-center gap-2">
+                                <div className="font-medium break-words">{transaction.description}</div>
+                                <div className="text-sm text-gray-500 flex items-center gap-2 flex-wrap">
                                   <span>{category?.icon} {category?.name}</span>
                                   <Badge variant="outline" className="text-xs">
                                     {getTransactionTypeLabel(transaction.type)}
@@ -933,8 +933,8 @@ export const DailyExpenses = ({ expenses, categories, account, onUpdateExpense, 
                                 </div>
                               </div>
                             </div>
-                            <div className="flex items-center gap-3">
-                              <div className={`font-semibold ${
+                            <div className="flex w-full items-center justify-between gap-2 sm:justify-end">
+                              <div className={`font-semibold whitespace-nowrap ${
                                 transaction.type === 'transfer'
                                   ? 'text-blue-600'
                                   : getCashDirection(transaction) === 'in'
@@ -948,7 +948,7 @@ export const DailyExpenses = ({ expenses, categories, account, onUpdateExpense, 
                                     : '-'}
                                 {formatCurrency(transaction.amount)}
                               </div>
-                              <div className="flex items-center gap-1">
+                              <div className="flex items-center gap-1 shrink-0">
                                 {onUpdateExpense && (
                                   <Button
                                     variant="ghost"

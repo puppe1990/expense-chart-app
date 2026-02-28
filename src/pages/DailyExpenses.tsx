@@ -14,13 +14,13 @@ const DailyExpensesPage = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-2">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">Gastos Diários</h1>
-          <p className="text-sm text-gray-600">Visualize seus gastos organizados por dia</p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold text-foreground">Gastos Diários</h1>
+          <p className="text-sm text-muted-foreground">Visualize seus gastos organizados por dia</p>
         </div>
         <Select value={activeAccount} onValueChange={(value: AccountType) => setActiveAccount(value)}>
-          <SelectTrigger className="w-[120px]" aria-label="Conta">
+          <SelectTrigger className="w-full sm:w-[120px]" aria-label="Conta">
             <SelectValue placeholder="Conta" />
           </SelectTrigger>
           <SelectContent>
