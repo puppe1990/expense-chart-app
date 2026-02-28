@@ -42,4 +42,15 @@ const assistantMessageSchema = z.object({
 export const assistantRequestSchema = z.object({
   message: z.string().min(1).max(5000),
   history: z.array(assistantMessageSchema).max(20).optional(),
+  openAiAccessToken: z.string().min(10).max(8000).optional(),
+});
+
+export const openAiOauthExchangeSchema = z.object({
+  code: z.string().min(10).max(4000),
+  codeVerifier: z.string().min(43).max(128),
+  redirectUri: z.string().url().max(500),
+});
+
+export const openAiOauthRefreshSchema = z.object({
+  refreshToken: z.string().min(10).max(8000),
 });

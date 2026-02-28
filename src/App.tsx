@@ -9,6 +9,7 @@ import Charts from "./pages/Charts";
 import DailyExpensesPage from "./pages/DailyExpenses";
 import MonthlyResultPage from "./pages/MonthlyResult";
 import LoansPage from "./pages/Loans";
+import OpenAICallbackPage from "./pages/OpenAICallback";
 import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/Auth";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
@@ -62,6 +63,7 @@ const AppContent = () => {
             <Route path="/daily" element={<DailyExpensesPage />} />
             <Route path="/resultado-mensal" element={<MonthlyResultPage />} />
             <Route path="/emprestimos" element={<LoansPage />} />
+            <Route path="/oauth/openai/callback" element={<OpenAICallbackPage />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

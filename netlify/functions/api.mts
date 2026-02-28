@@ -3,6 +3,7 @@ import type { Config, Context } from "@netlify/functions";
 import { handleAssistant } from "./lib/assistant.mts";
 import { buildSignOutResponse, handleSignIn, handleSignUp, verifyAuth } from "./lib/auth.mts";
 import { ensureSchema } from "./lib/db.mts";
+import { handleOpenAiOauthExchange, handleOpenAiOauthRefresh } from "./lib/openai-oauth.mts";
 import {
   handleBatchExpense,
   handleCreateExpense,
@@ -117,6 +118,14 @@ export default async (req: Request, _context: Context) => {
         jsonResponse({ user: { id: auth.userId, email: auth.email } }),
         requestId
       );
+    }
+
+    if (path === "/api/openai/oauth/exchange" && method === "POST") {
+      return withRequestId(await handleOpenAiOauthExchange(req, requestId), requestId);
+    }
+
+    if (path === "/api/openai/oauth/refresh" && method === "POST") {
+      return withRequestId(await handleOpenAiOauthRefresh(req, requestId), requestId);
     }
 
     if (path === "/api/expenses" && method === "GET") {

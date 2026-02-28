@@ -1,9 +1,16 @@
-import { useMemo, useState } from "react";
-import { Bot, ExternalLink, Send, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Bot, Link2, LogOut, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
+import {
+  clearOpenAiTokens,
+  getStoredOpenAiTokens,
+  isTokenExpired,
+  refreshOpenAiToken,
+  startOpenAiOAuth,
+} from "@/lib/openai-oauth";
 
 type AssistantMessage = {
   role: "user" | "assistant";
@@ -22,6 +29,7 @@ export const CodexAssistant = () => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [isConnected, setIsConnected] = useState(Boolean(getStoredOpenAiTokens()?.accessToken));
 
   const historyForApi = useMemo(
     () =>
@@ -30,6 +38,33 @@ export const CodexAssistant = () => {
         .slice(-12),
     [messages]
   );
+
+  useEffect(() => {
+    const syncConnectionState = () => {
+      setIsConnected(Boolean(getStoredOpenAiTokens()?.accessToken));
+    };
+    syncConnectionState();
+    window.addEventListener("focus", syncConnectionState);
+    return () => window.removeEventListener("focus", syncConnectionState);
+  }, []);
+
+  const ensureAccessToken = async () => {
+    const currentTokens = getStoredOpenAiTokens();
+    if (!currentTokens?.accessToken) {
+      setIsConnected(false);
+      return null;
+    }
+
+    if (!isTokenExpired(currentTokens)) return currentTokens.accessToken;
+    if (!currentTokens.refreshToken) {
+      setIsConnected(false);
+      return null;
+    }
+
+    const refreshed = await refreshOpenAiToken(currentTokens.refreshToken);
+    setIsConnected(true);
+    return refreshed.accessToken;
+  };
 
   const handleSend = async () => {
     const content = input.trim();
@@ -41,6 +76,11 @@ export const CodexAssistant = () => {
     setIsLoading(true);
 
     try {
+      const openAiAccessToken = await ensureAccessToken();
+      if (!openAiAccessToken) {
+        throw new Error("Conecte sua conta ChatGPT para usar o assistente.");
+      }
+
       const response = await fetch("/api/assistant", {
         method: "POST",
         headers: {
@@ -50,6 +90,7 @@ export const CodexAssistant = () => {
         body: JSON.stringify({
           message: content,
           history: historyForApi,
+          openAiAccessToken,
         }),
       });
 
@@ -137,18 +178,35 @@ export const CodexAssistant = () => {
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() =>
-                  window.open("https://chatgpt.com/auth/login", "_blank", "noopener,noreferrer")
-                }
+                onClick={() => {
+                  void startOpenAiOAuth();
+                }}
               >
-                <ExternalLink className="h-4 w-4 mr-2" />
-                Entrar no ChatGPT
+                <Link2 className="h-4 w-4 mr-2" />
+                {isConnected ? "Reconectar ChatGPT" : "Conectar ChatGPT"}
               </Button>
 
-              <Button onClick={handleSend} disabled={!input.trim() || isLoading}>
-                <Send className="h-4 w-4 mr-2" />
-                Enviar
-              </Button>
+              <div className="flex items-center gap-2">
+                {isConnected && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      clearOpenAiTokens();
+                      setIsConnected(false);
+                      toast.success("Conta ChatGPT desconectada.");
+                    }}
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sair
+                  </Button>
+                )}
+                <Button onClick={handleSend} disabled={!input.trim() || isLoading || !isConnected}>
+                  <Send className="h-4 w-4 mr-2" />
+                  Enviar
+                </Button>
+              </div>
             </div>
           </div>
         </div>

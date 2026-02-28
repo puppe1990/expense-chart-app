@@ -32,11 +32,11 @@ export const handleAssistant = async (req: Request, _auth: AuthInfo, requestId: 
   const parsed = await parseBody(req, assistantRequestSchema, requestId);
   if ("error" in parsed) return parsed.error;
 
-  const openAiApiKey = Netlify.env.get("OPENAI_API_KEY");
+  const openAiApiKey = parsed.data.openAiAccessToken ?? Netlify.env.get("OPENAI_API_KEY");
   if (!openAiApiKey) {
     return errorResponse({
       code: "INTERNAL_ERROR",
-      message: "Assistant service unavailable",
+      message: "Assistant sem credencial OpenAI",
       requestId,
       status: 500,
     });
