@@ -4,3 +4,8 @@
 [build]
   publish = "dist"
   command = "npm run build"
+
+[dev]
+  command = "npm run dev:app"
+  targetPort = 8080
+  port = 8888
