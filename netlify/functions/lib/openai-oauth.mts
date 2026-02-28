@@ -2,7 +2,6 @@ import { errorResponse, jsonResponse, parseBody } from "./response.mts";
 import { openAiOauthExchangeSchema, openAiOauthRefreshSchema } from "./validation.mts";
 
 const OPENAI_TOKEN_URL = "https://auth.openai.com/oauth/token";
-const DEFAULT_OPENAI_CLIENT_ID = "app_EMoamEEZ73f0CkXaXp7hrann";
 
 const buildTokenPayload = (payload: {
   access_token?: string;
@@ -72,7 +71,15 @@ export const handleOpenAiOauthExchange = async (req: Request, requestId: string)
   const parsed = await parseBody(req, openAiOauthExchangeSchema, requestId);
   if ("error" in parsed) return parsed.error;
 
-  const clientId = Netlify.env.get("OPENAI_OAUTH_CLIENT_ID") || DEFAULT_OPENAI_CLIENT_ID;
+  const clientId = Netlify.env.get("OPENAI_OAUTH_CLIENT_ID");
+  if (!clientId) {
+    return errorResponse({
+      code: "INTERNAL_ERROR",
+      message: "OPENAI_OAUTH_CLIENT_ID não configurado",
+      requestId,
+      status: 500,
+    });
+  }
   const params = new URLSearchParams({
     grant_type: "authorization_code",
     client_id: clientId,
@@ -88,7 +95,15 @@ export const handleOpenAiOauthRefresh = async (req: Request, requestId: string) 
   const parsed = await parseBody(req, openAiOauthRefreshSchema, requestId);
   if ("error" in parsed) return parsed.error;
 
-  const clientId = Netlify.env.get("OPENAI_OAUTH_CLIENT_ID") || DEFAULT_OPENAI_CLIENT_ID;
+  const clientId = Netlify.env.get("OPENAI_OAUTH_CLIENT_ID");
+  if (!clientId) {
+    return errorResponse({
+      code: "INTERNAL_ERROR",
+      message: "OPENAI_OAUTH_CLIENT_ID não configurado",
+      requestId,
+      status: 500,
+    });
+  }
   const params = new URLSearchParams({
     grant_type: "refresh_token",
     client_id: clientId,

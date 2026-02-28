@@ -8,15 +8,13 @@ export interface OpenAiTokens {
   idToken?: string;
 }
 
-const DEFAULT_OPENAI_CLIENT_ID = "app_EMoamEEZ73f0CkXaXp7hrann";
 const OPENAI_AUTH_URL = "https://auth.openai.com/oauth/authorize";
 const STORAGE_KEY = "openai_oauth_tokens";
 const STATE_KEY = "openai_oauth_state";
 const CODE_VERIFIER_KEY = "openai_oauth_code_verifier";
 const REDIRECT_URI_KEY = "openai_oauth_redirect_uri";
 
-const getClientId = () =>
-  (import.meta.env.VITE_OPENAI_CLIENT_ID as string | undefined) || DEFAULT_OPENAI_CLIENT_ID;
+const getClientId = () => import.meta.env.VITE_OPENAI_CLIENT_ID as string | undefined;
 
 const toBase64Url = (bytes: Uint8Array) =>
   btoa(String.fromCharCode(...bytes))
@@ -66,6 +64,11 @@ export const clearOpenAiTokens = () => {
 export const isTokenExpired = (tokens: OpenAiTokens) => Date.now() >= tokens.expiresAt - 60_000;
 
 export const startOpenAiOAuth = async () => {
+  const clientId = getClientId();
+  if (!clientId) {
+    throw new Error("VITE_OPENAI_CLIENT_ID não configurado.");
+  }
+
   const state = randomString(48);
   const codeVerifier = randomString(96);
   const codeChallenge = toBase64Url(await sha256(codeVerifier));
@@ -76,15 +79,13 @@ export const startOpenAiOAuth = async () => {
   sessionStorage.setItem(REDIRECT_URI_KEY, redirectUri);
 
   const params = new URLSearchParams({
-    client_id: getClientId(),
+    client_id: clientId,
     response_type: "code",
     redirect_uri: redirectUri,
     scope: "openid profile email offline_access",
     state,
     code_challenge: codeChallenge,
     code_challenge_method: "S256",
-    id_token_add_organizations: "true",
-    originator: "openai_native",
   });
 
   window.location.href = `${OPENAI_AUTH_URL}?${params.toString()}`;
